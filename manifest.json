@@ -1,0 +1,16 @@
+{
+  "name": "塔罗神谕 · Tarot Oracle",
+  "short_name": "塔罗神谕",
+  "description": "在线塔罗牌占卜——多套牌面、韦特全牌义中文解读，可接入 AI 深度解卦。",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f20",
+  "theme_color": "#0f0f20",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

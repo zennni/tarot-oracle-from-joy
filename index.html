@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>塔罗神谕 · Tarot Oracle</title>
+<meta name="description" content="塔罗神谕 · 在线塔罗牌占卜——多套精美牌面、韦特全牌义中文解读，可接入 AI 深度解卦。每日一抽，照见处境，辅助抉择。仅供娱乐与自我觉察。">
+<meta name="theme-color" content="#0f0f20">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🔮</text></svg>">
+<meta property="og:type" content="website">
+<meta property="og:title" content="塔罗神谕 · Tarot Oracle">
+<meta property="og:description" content="在线塔罗占卜，多套牌面 + 韦特全牌义中文解读，可接入 AI 深度解卦。">
+<meta property="og:image" content="og-cover.jpg">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="塔罗神谕 · Tarot Oracle">
+<meta name="twitter:image" content="og-cover.jpg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="塔罗神谕">
+<script>
+// WeChat WebView cannot handle streaming API calls to external AI providers.
+// Detect and redirect immediately before any other scripts run.
+if (/MicroMessenger/i.test(navigator.userAgent)) {
+  document.addEventListener('DOMContentLoaded', function () {
+    document.body.innerHTML = [
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;',
+      'min-height:100vh;background:#0d0b1a;color:#e8e0f0;font-family:Georgia,serif;',
+      'text-align:center;padding:2.5rem">',
+      '<div style="font-size:3.5rem;margin-bottom:1.2rem;',
+      'filter:drop-shadow(0 0 18px #c9a84c)">✦</div>',
+      '<h2 style="color:#c9a84c;letter-spacing:.25em;font-weight:normal;margin-bottom:1rem">',
+      '塔罗神谕</h2>',
+      '<p style="color:#a090c0;line-height:1.8;margin-bottom:2rem;font-size:.95rem">',
+      '微信浏览器不支持本站所需功能<br>请在外部浏览器中打开</p>',
+      '<div style="border:1px solid rgba(201,168,76,.4);border-radius:6px;',
+      'padding:1.2rem 1.8rem;color:#c9a84c;font-size:.88rem;line-height:2">',
+      '点击右上角 <strong>···</strong><br>选择 <strong>在浏览器中打开</strong>',
+      '</div>',
+      '<div style="font-size:2.5rem;margin-top:1.5rem;opacity:.6">↗</div>',
+      '</div>'
+    ].join('');
+  });
+}
+</script>
+<style>
+/* ── Variables ─────────────────────────────── */
+:root{
+  --bg:#0d0b1a; --bg2:#13102a; --bg3:#1a1a2e;
+  --gold:#c9a84c; --gold2:#e8c97a; --gold3:rgba(201,168,76,.15);
+  --purple:#6b3fa0; --purple2:#9b6fd4;
+  --text:#e8e0f0; --text2:#a090c0;
+  --red:#c0392b;
+  --card-w:80px; --card-h:138px;
+  --card-w-lg:120px; --card-h-lg:207px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;min-height:100vh;overflow-x:hidden}
+
+/* ── Stars canvas ──────────────────────────── */
+#stars-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(107,63,160,.18) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(201,168,76,.09) 0%,transparent 50%);
+}
+#app{position:relative;z-index:1}
+
+/* ── INTRO ─────────────────────────────────── */
+#intro{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;text-align:center;padding:2rem;
+}
+.intro-glyph{font-size:4rem;margin-bottom:1.2rem;animation:glyphPulse 3s ease-in-out infinite}
+@keyframes glyphPulse{0%,100%{filter:drop-shadow(0 0 12px var(--gold))}50%{filter:drop-shadow(0 0 28px var(--gold2))}}
+.intro-title{
+  font-size:clamp(1.8rem,5vw,3rem);font-weight:normal;letter-spacing:.3em;
+  background:linear-gradient(135deg,var(--gold),var(--purple2),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:.4rem;
+}
+.intro-sub{color:var(--text2);letter-spacing:.12em;margin-bottom:2.5rem;font-size:.95rem}
+.lang-row{display:flex;gap:1.2rem;margin-bottom:2.5rem}
+.lang-btn{
+  padding:.7rem 2.2rem;border:1px solid var(--gold);background:transparent;
+  color:var(--gold);cursor:pointer;font-family:Georgia,serif;font-size:.95rem;
+  letter-spacing:.1em;transition:all .3s;border-radius:2px;
+}
+.lang-btn:hover,.lang-btn.active{background:var(--gold);color:var(--bg);font-weight:bold}
+.enter-btn{
+  padding:1rem 3rem;border:1px solid var(--gold);
+  background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(107,63,160,.1));
+  color:var(--gold2);cursor:pointer;font-family:Georgia,serif;font-size:1.1rem;
+  letter-spacing:.2em;transition:all .4s;border-radius:2px;
+}
+.enter-btn:hover{
+  background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(107,63,160,.22));
+  box-shadow:0 0 32px rgba(201,168,76,.28);
+}
+
+/* ── MAIN ──────────────────────────────────── */
+#main{display:none;flex-direction:column;min-height:100vh}
+
+/* Header */
+.header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
+  padding:.9rem 1.8rem;border-bottom:1px solid rgba(201,168,76,.2);
+  background:rgba(13,11,26,.85);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:200;
+}
+.header-title{font-size:1.1rem;letter-spacing:.18em;color:var(--gold)}
+.header-right{display:flex;align-items:center;gap:.8rem}
+.nav-btn{
+  padding:.38rem .9rem;border:1px solid rgba(201,168,76,.3);background:transparent;
+  color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.8rem;
+  letter-spacing:.05em;transition:all .3s;border-radius:2px;
+}
+.nav-btn:hover,.nav-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.1)}
+.settings-btn{
+  padding:.38rem .7rem;border:1px solid rgba(155,111,212,.4);background:transparent;
+  color:var(--purple2);cursor:pointer;font-size:1rem;border-radius:2px;transition:all .3s;
+}
+.settings-btn:hover{background:rgba(107,63,160,.2)}
+.support-btn{
+  padding:.38rem .7rem;border:1px solid rgba(201,168,76,.4);background:transparent;
+  color:var(--gold);cursor:pointer;font-family:Georgia,serif;font-size:.8rem;
+  letter-spacing:.04em;border-radius:2px;transition:all .3s;white-space:nowrap;
+}
+.support-btn:hover{background:rgba(201,168,76,.12);border-color:var(--gold)}
+.support-btn .heart{color:#e0567a}
+.help-btn{
+  padding:.38rem .62rem;border:1px solid rgba(120,180,200,.35);background:transparent;
+  color:rgba(160,210,230,.8);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;
+  letter-spacing:.04em;border-radius:2px;transition:all .3s;white-space:nowrap;text-decoration:none;
+  display:inline-flex;align-items:center;gap:.3rem;
+}
+.help-btn:hover{background:rgba(120,180,200,.1);border-color:rgba(160,210,230,.7);color:rgba(160,210,230,1)}
+/* Support modal */
+#support-modal{
+  display:none;position:fixed;inset:0;z-index:2000;
+  background:rgba(8,6,18,.82);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:1.2rem;
+}
+#support-modal.open{display:flex}
+#support-modal .support-box{
+  background:var(--card-dark,#1a1a2e);border:1px solid rgba(201,168,76,.35);
+  border-radius:8px;max-width:360px;width:100%;padding:1.6rem 1.4rem 1.4rem;
+  text-align:center;position:relative;box-shadow:0 0 40px rgba(107,63,160,.4);
+  max-height:90vh;overflow-y:auto;
+}
+#support-modal .support-title{color:var(--gold);letter-spacing:.12em;font-size:1.05rem;margin-bottom:.4rem}
+#support-modal .support-sub{color:var(--text2);font-size:.8rem;line-height:1.6;margin-bottom:1.1rem}
+#support-modal .qr-row{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+#support-modal .qr-col{flex:1;min-width:120px;max-width:160px;text-align:center}
+#support-modal .qr-type-label{font-size:.72rem;color:var(--text2);letter-spacing:.06em;margin-bottom:.35rem;text-transform:uppercase}
+#support-modal .qr-wrap{
+  background:#fff;border-radius:8px;padding:.5rem;display:block;width:100%;
+}
+#support-modal .qr-wrap img{width:100%;display:block;border-radius:4px}
+#support-modal .qr-fallback{
+  color:#333;font-size:.75rem;padding:1.5rem .5rem;line-height:1.6;
+}
+#support-modal .qr-caption{color:var(--text2);font-size:.78rem;margin-top:.9rem;line-height:1.5}
+#support-modal .support-thanks{color:var(--gold);font-size:.82rem;margin-top:.8rem;font-style:italic}
+/* Inline tip banner after reading */
+#tip-banner{
+  display:none;max-width:860px;margin:.8rem auto .2rem;
+  padding:.75rem 1.1rem .75rem 1.2rem;
+  background:rgba(201,168,76,.06);
+  border:1px solid rgba(201,168,76,.22);
+  border-radius:5px;
+  display:none;
+  align-items:center;gap:.8rem;flex-wrap:wrap;
+}
+#tip-banner.visible{display:flex}
+#tip-banner .tip-text{flex:1;min-width:160px;color:var(--text2);font-size:.8rem;line-height:1.55;font-style:italic}
+#tip-banner .tip-text em{color:var(--gold);font-style:normal}
+#tip-banner .tip-btn{
+  padding:.38rem 1.1rem;border:1px solid rgba(201,168,76,.45);background:transparent;
+  color:var(--gold);cursor:pointer;font-family:Georgia,serif;font-size:.8rem;
+  border-radius:3px;transition:all .25s;white-space:nowrap;flex-shrink:0;
+}
+#tip-banner .tip-btn:hover{background:rgba(201,168,76,.12);border-color:var(--gold)}
+#tip-banner .tip-close{
+  background:none;border:none;color:var(--text2);cursor:pointer;
+  font-size:1rem;padding:.15rem .4rem;line-height:1;flex-shrink:0;opacity:.6;transition:opacity .2s;
+}
+#tip-banner .tip-close:hover{opacity:1}
+
+/* Panels */
+.panel{display:none;padding:1.5rem 1.8rem 3rem}
+.panel.active{display:block}
+
+/* ── READING PANEL ─────────────────────────── */
+/* Controls bar */
+.controls-bar{
+  max-width:860px;margin:0 auto 1.5rem;
+  background:rgba(26,26,46,.65);border:1px solid rgba(201,168,76,.18);
+  padding:1.5rem;border-radius:4px;backdrop-filter:blur(6px);
+}
+.section-label{
+  font-size:.7rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-bottom:.7rem
+}
+.spread-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.55rem;margin-bottom:1rem}
+.spread-btn{
+  padding:.55rem .3rem;border:1px solid rgba(201,168,76,.25);background:rgba(107,63,160,.08);
+  color:var(--text2);cursor:pointer;font-family:Georgia,serif;
+  text-align:center;transition:all .3s;border-radius:2px;position:relative;
+}
+.spread-btn:hover,.spread-btn.active{
+  border-color:var(--gold);color:var(--gold);
+  background:rgba(201,168,76,.12);box-shadow:0 0 14px rgba(201,168,76,.1)
+}
+.spread-btn.recommended::after{
+  content:'★';position:absolute;top:-6px;right:-4px;font-size:.6rem;color:var(--gold);
+  background:var(--bg);padding:0 2px;line-height:1;
+}
+.spread-btn .si{font-size:1.1rem;display:block;margin-bottom:.15rem}
+.spread-btn .sn{font-size:.68rem;display:block}
+.spread-btn .sc{font-size:.55rem;display:block;color:var(--text2);opacity:.6;margin-top:.1rem}
+.spread-recommend{
+  font-size:.75rem;color:var(--gold2);margin-bottom:.6rem;padding:.45rem .7rem;
+  border:1px solid rgba(201,168,76,.18);border-radius:2px;background:rgba(201,168,76,.05);
+  line-height:1.5;
+}
+.spread-desc{
+  font-size:.7rem;color:var(--text2);text-align:center;min-height:1.2rem;margin-bottom:.6rem;opacity:.7;
+}
+.question-input{
+  width:100%;padding:.75rem 1rem;background:rgba(13,11,26,.85);
+  border:1px solid rgba(201,168,76,.28);color:var(--text);
+  font-family:Georgia,serif;font-size:.9rem;border-radius:2px;
+  resize:none;margin-bottom:1.2rem;outline:none;transition:border-color .3s;
+}
+.question-input:focus{border-color:var(--gold)}
+.question-input::placeholder{color:var(--text2)}
+.shuffle-btn{
+  display:block;width:100%;padding:.9rem;
+  background:linear-gradient(135deg,rgba(107,63,160,.28),rgba(201,168,76,.18));
+  border:1px solid var(--gold);color:var(--gold2);cursor:pointer;
+  font-family:Georgia,serif;font-size:1rem;letter-spacing:.14em;
+  transition:all .4s;border-radius:2px;
+}
+.shuffle-btn:hover{
+  background:linear-gradient(135deg,rgba(107,63,160,.45),rgba(201,168,76,.28));
+  box-shadow:0 0 26px rgba(201,168,76,.22);
+}
+.shuffle-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── FAN STAGE ─────────────────────────────── */
+#fan-stage-wrap{
+  position:relative;width:100%;max-width:860px;margin:0 auto;
+  height:340px;display:none;
+}
+.fan-instruction{
+  text-align:center;color:var(--text2);font-size:.8rem;letter-spacing:.1em;
+  margin-bottom:.6rem;font-style:italic;
+}
+#fan-stage{
+  position:relative;width:100%;height:100%;
+  display:flex;align-items:flex-end;justify-content:center;overflow:visible;
+}
+
+/* Individual fan card */
+.fan-card{
+  position:absolute;
+  width:var(--card-w);height:var(--card-h);
+  border-radius:6px;cursor:pointer;
+  transform-origin:bottom center;
+  transition:transform .25s ease,filter .25s ease,z-index 0s;
+  will-change:transform;
+  bottom:0;
+}
+.fan-card .fc-back{
+  width:100%;height:100%;border-radius:6px;
+  background:linear-gradient(160deg,#0a1428,#160a26,#0d1b3e);
+  border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(0,0,0,.6);
+  overflow:hidden;position:relative;
+}
+.fan-card .fc-back::before{
+  content:'';position:absolute;inset:0;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 50%, rgba(201,168,76,.04) 0deg 10deg, transparent 10deg 20deg),
+    radial-gradient(circle at 50% 50%, rgba(201,168,76,.08) 0%, transparent 65%);
+}
+.fan-card .fc-back-inner{
+  width:78%;height:82%;
+  border:1px solid rgba(201,168,76,.4);
+  border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;position:relative;z-index:1;
+  box-shadow:inset 0 0 12px rgba(201,168,76,.08),0 0 0 1px rgba(201,168,76,.12);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(201,168,76,.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(107,63,160,.08) 0%, transparent 50%);
+}
+.fan-card:hover{z-index:100 !important}
+/* Mobile grid mode — cards laid out in rows, easy to tap */
+#fan-stage.mobile-grid-stage{
+  position:static !important;
+  display:flex !important;flex-wrap:wrap !important;
+  justify-content:center !important;align-items:flex-start !important;
+  gap:3px;padding:5px 4px;
+  height:auto !important;min-width:0 !important;
+  overflow:hidden !important;
+  box-sizing:border-box;
+}
+#fan-stage-wrap.mobile-grid-wrap{
+  height:auto !important;max-height:260px;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+.fan-card.mobile-grid-card{
+  position:relative !important;left:auto !important;bottom:auto !important;
+  transform:none !important;transform-origin:center !important;
+  width:36px !important;height:60px !important;flex-shrink:0;
+  transition:filter .15s ease !important;
+}
+.fan-card.mobile-grid-card:active:not(.drawn){
+  filter:drop-shadow(0 0 8px rgba(201,168,76,.9)) !important;
+}
+.fan-card.mobile-grid-card.drawn{opacity:.35 !important}
+.fc-back-img{width:100%;height:100%;object-fit:cover;border-radius:5px;display:block}
+.cf-back-img{width:100%;height:100%;object-fit:cover;border-radius:5px;display:block}
+
+/* fly-out animation */
+@keyframes flyToSlot{
+  0%  {transform:var(--start-transform) scale(1)}
+  40% {transform:var(--start-transform) scale(1.15) translateY(-60px)}
+  100%{transform:translate(var(--tx),var(--ty)) scale(var(--ts))}
+}
+.fan-card.flying{
+  animation:flyToSlot .55s cubic-bezier(.4,0,.2,1) forwards;
+  pointer-events:none;z-index:300 !important;
+}
+
+/* ── SELECTED CARDS ROW ────────────────────── */
+#selected-row{
+  max-width:860px;margin:1.2rem auto 0;
+  display:none;
+}
+.selected-label{
+  text-align:center;color:var(--text2);font-size:.75rem;
+  letter-spacing:.15em;text-transform:uppercase;margin-bottom:.8rem;
+}
+.selected-slots{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:1rem;
+}
+/* Celtic Cross cross-shaped grid — use base card size so 4 rows fit in viewport */
+:root{ --card-w-ct:82px; --card-h-ct:141px; }
+.selected-slots.celtic-layout{
+  display:grid;
+  grid-template-columns:repeat(4,var(--card-w-ct)) calc(var(--card-w-ct) + 20px);
+  grid-template-rows:repeat(4,var(--card-h-ct));
+  gap:8px 8px;
+  justify-content:center;
+}
+.selected-slots.celtic-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.celtic-layout .sel-slot:nth-child(1){grid-column:2;grid-row:2}
+.selected-slots.celtic-layout .sel-slot:nth-child(2){grid-column:3;grid-row:2}
+.selected-slots.celtic-layout .sel-slot:nth-child(3){grid-column:2;grid-row:3}
+.selected-slots.celtic-layout .sel-slot:nth-child(4){grid-column:1;grid-row:2}
+.selected-slots.celtic-layout .sel-slot:nth-child(5){grid-column:2;grid-row:1}
+.selected-slots.celtic-layout .sel-slot:nth-child(6){grid-column:4;grid-row:2}
+.selected-slots.celtic-layout .sel-slot:nth-child(7){grid-column:5;grid-row:4}
+.selected-slots.celtic-layout .sel-slot:nth-child(8){grid-column:5;grid-row:3}
+.selected-slots.celtic-layout .sel-slot:nth-child(9){grid-column:5;grid-row:2}
+.selected-slots.celtic-layout .sel-slot:nth-child(10){grid-column:5;grid-row:1}
+.sel-slot{
+  display:flex;flex-direction:column;align-items:center;gap:.4rem;
+}
+.sel-pos-label{font-size:.65rem;color:var(--text2);letter-spacing:.08em;text-align:center;text-transform:uppercase}
+
+/* Card name label shown after flip */
+.cf-name-label{
+  font-size:.68rem;color:var(--gold2);text-align:center;margin-top:.3rem;
+  max-width:var(--card-w-lg);line-height:1.3;
+}
+.cf-rev-tag{color:var(--red);font-size:.6rem;margin-left:.2rem}
+.selected-slots.celtic-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.58rem}
+
+/* Empty slot placeholder (dotted outline before card is drawn) */
+.card-placeholder{
+  width:var(--card-w-lg);height:var(--card-h-lg);
+  border:2px dashed rgba(201,168,76,.3);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(201,168,76,.03);
+}
+.selected-slots.celtic-layout .card-placeholder{
+  width:var(--card-w-ct);height:var(--card-h-ct);
+}
+/* Pentagram: 5 points — top(centre), upper-right, lower-right, lower-left, upper-left */
+.selected-slots.pentagram-layout{
+  display:grid;
+  grid-template-columns:repeat(3,calc(var(--card-w-ct) + 12px));
+  grid-template-rows:repeat(3,auto);
+  gap:8px;justify-content:center;
+}
+/* positions: Present(top-centre), Challenge(right), Future(lower-right), Past(lower-left), Subconscious(left) */
+.selected-slots.pentagram-layout .sel-slot:nth-child(1){grid-column:2;grid-row:1}
+.selected-slots.pentagram-layout .sel-slot:nth-child(2){grid-column:3;grid-row:2}
+.selected-slots.pentagram-layout .sel-slot:nth-child(3){grid-column:3;grid-row:3}
+.selected-slots.pentagram-layout .sel-slot:nth-child(4){grid-column:1;grid-row:3}
+.selected-slots.pentagram-layout .sel-slot:nth-child(5){grid-column:1;grid-row:2}
+.selected-slots.pentagram-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.pentagram-layout .card-placeholder{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.pentagram-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.58rem}
+/* Love Cross: cross shape — center, top, right, bottom, left */
+.selected-slots.lovecross-layout{
+  display:grid;
+  grid-template-columns:repeat(3,var(--card-w-ct));
+  grid-template-rows:repeat(3,auto);
+  gap:8px;justify-content:center;
+}
+.selected-slots.lovecross-layout .sel-slot:nth-child(1){grid-column:1;grid-row:2}
+.selected-slots.lovecross-layout .sel-slot:nth-child(2){grid-column:3;grid-row:2}
+.selected-slots.lovecross-layout .sel-slot:nth-child(3){grid-column:2;grid-row:2}
+.selected-slots.lovecross-layout .sel-slot:nth-child(4){grid-column:2;grid-row:1}
+.selected-slots.lovecross-layout .sel-slot:nth-child(5){grid-column:2;grid-row:3}
+.selected-slots.lovecross-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.lovecross-layout .card-placeholder{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.lovecross-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.58rem}
+/* Two Choices: fork shape — center top, then two columns */
+.selected-slots.twochoices-layout{
+  display:grid;
+  grid-template-columns:repeat(2,calc(var(--card-w-ct) + 20px));
+  grid-template-rows:repeat(3,auto);
+  gap:8px 24px;justify-content:center;
+}
+.selected-slots.twochoices-layout .sel-slot:nth-child(1){grid-column:1/3;grid-row:1;justify-self:center}
+.selected-slots.twochoices-layout .sel-slot:nth-child(2){grid-column:1;grid-row:2}
+.selected-slots.twochoices-layout .sel-slot:nth-child(3){grid-column:1;grid-row:3}
+.selected-slots.twochoices-layout .sel-slot:nth-child(4){grid-column:2;grid-row:2}
+.selected-slots.twochoices-layout .sel-slot:nth-child(5){grid-column:2;grid-row:3}
+.selected-slots.twochoices-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.twochoices-layout .card-placeholder{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.twochoices-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.58rem}
+/* Horseshoe: arc of 7 */
+.selected-slots.horseshoe-layout{
+  display:grid;
+  grid-template-columns:repeat(7,var(--card-w-ct));
+  gap:4px;justify-content:center;align-items:end;
+}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(1){transform:translateY(-8px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(2){transform:translateY(-20px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(3){transform:translateY(-28px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(4){transform:translateY(-32px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(5){transform:translateY(-28px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(6){transform:translateY(-20px)}
+.selected-slots.horseshoe-layout .sel-slot:nth-child(7){transform:translateY(-8px)}
+.selected-slots.horseshoe-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.horseshoe-layout .card-placeholder{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.horseshoe-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.54rem}
+/* Life Tree: Kabbalistic tree shape */
+.selected-slots.lifetree-layout{
+  display:grid;
+  grid-template-columns:repeat(3,calc(var(--card-w-ct) + 8px));
+  grid-template-rows:repeat(5,auto);
+  gap:6px;justify-content:center;
+}
+.selected-slots.lifetree-layout .sel-slot:nth-child(1){grid-column:2;grid-row:1}
+.selected-slots.lifetree-layout .sel-slot:nth-child(2){grid-column:1;grid-row:2}
+.selected-slots.lifetree-layout .sel-slot:nth-child(3){grid-column:3;grid-row:2}
+.selected-slots.lifetree-layout .sel-slot:nth-child(4){grid-column:1;grid-row:3}
+.selected-slots.lifetree-layout .sel-slot:nth-child(5){grid-column:3;grid-row:3}
+.selected-slots.lifetree-layout .sel-slot:nth-child(6){grid-column:2;grid-row:3}
+.selected-slots.lifetree-layout .sel-slot:nth-child(7){grid-column:1;grid-row:4}
+.selected-slots.lifetree-layout .sel-slot:nth-child(8){grid-column:3;grid-row:4}
+.selected-slots.lifetree-layout .sel-slot:nth-child(9){grid-column:2;grid-row:4}
+.selected-slots.lifetree-layout .sel-slot:nth-child(10){grid-column:2;grid-row:5}
+.selected-slots.lifetree-layout .card-flip-wrap{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.lifetree-layout .card-placeholder{width:var(--card-w-ct);height:var(--card-h-ct)}
+.selected-slots.lifetree-layout .cf-name-label{max-width:var(--card-w-ct);font-size:.54rem}
+
+/* Card flip container */
+.card-flip-wrap{
+  width:var(--card-w-lg);height:var(--card-h-lg);
+  perspective:900px;cursor:default;
+}
+.card-flip-inner{
+  width:100%;height:100%;position:relative;
+  transform-style:preserve-3d;
+  transition:transform .75s cubic-bezier(.4,0,.2,1);
+}
+.card-flip-wrap.flipped .card-flip-inner{transform:rotateY(180deg)}
+.cf-back,.cf-front{
+  position:absolute;width:100%;height:100%;
+  backface-visibility:hidden;border-radius:6px;overflow:hidden;
+}
+.cf-back{
+  background:linear-gradient(160deg,#0a1428,#160a26,#0d1b3e);
+  border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.cf-back::before{
+  content:'';position:absolute;inset:0;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 50%, rgba(201,168,76,.05) 0deg 10deg, transparent 10deg 20deg),
+    radial-gradient(circle at 50% 50%, rgba(201,168,76,.1) 0%, transparent 65%);
+}
+.cf-back-inner{
+  width:80%;height:84%;
+  border:1px solid rgba(201,168,76,.4);
+  border-radius:3px;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  position:relative;z-index:1;
+  box-shadow:inset 0 0 18px rgba(201,168,76,.08),0 0 0 1px rgba(201,168,76,.12);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(201,168,76,.07) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(107,63,160,.1) 0%, transparent 50%);
+}
+/* ── Image skeleton ─────────────────────────── */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.img-skeleton{
+  background:linear-gradient(90deg,rgba(201,168,76,.05) 25%,rgba(201,168,76,.12) 50%,rgba(201,168,76,.05) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s ease-in-out infinite;
+}
+.cf-front{
+  transform:rotateY(180deg);
+  border:2px solid var(--gold);
+  background:#111;
+}
+.cf-front img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.cf-front.reversed img{transform:rotate(180deg)}
+.cf-reversed-tag{
+  position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+  font-size:.55rem;color:var(--red);
+  background:rgba(0,0,0,.75);border:1px solid rgba(192,57,43,.5);
+  padding:.1rem .4rem;border-radius:2px;white-space:nowrap;z-index:2;
+}
+
+/* Reveal all button */
+#reveal-btn{
+  display:none;
+  margin:1.2rem auto 0;
+  padding:.8rem 2.5rem;border:1px solid var(--gold);
+  background:rgba(201,168,76,.12);color:var(--gold2);
+  cursor:pointer;font-family:Georgia,serif;font-size:.95rem;letter-spacing:.12em;
+  border-radius:2px;transition:all .35s;
+}
+#reveal-btn:hover{background:rgba(201,168,76,.22);box-shadow:0 0 22px rgba(201,168,76,.2)}
+
+/* ── READING OUTPUT ────────────────────────── */
+#readings-output{
+  max-width:860px;margin:2rem auto 0;
+}
+.reading-divider{
+  text-align:center;color:rgba(201,168,76,.3);
+  letter-spacing:.6em;margin:1.5rem 0;font-size:.75rem;
+}
+.rcb{
+  background:rgba(26,26,46,.72);border:1px solid rgba(201,168,76,.18);
+  border-radius:4px;padding:1.4rem;margin-bottom:1.2rem;
+  animation:fadeUp .55s ease both;backdrop-filter:blur(4px);
+}
+.rcb.upright{border-left:3px solid var(--gold)}
+.rcb.reversed{border-left:3px solid var(--red)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.rcb-head{display:flex;align-items:flex-start;gap:1.2rem;margin-bottom:.9rem}
+.rcb-img{
+  width:60px;height:103px;border-radius:4px;
+  border:1px solid rgba(201,168,76,.3);object-fit:cover;flex-shrink:0;
+}
+.rcb-img.reversed-img{transform:rotate(180deg)}
+.rcb-meta{}
+.rcb-pos{font-size:.65rem;color:var(--text2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.25rem}
+.rcb-title{font-size:1rem;color:var(--gold);letter-spacing:.05em}
+.rcb-rev{
+  display:inline-block;font-size:.65rem;color:var(--red);
+  border:1px solid rgba(192,57,43,.4);padding:.1rem .45rem;
+  border-radius:2px;margin-left:.5rem;vertical-align:middle;
+}
+.rcb-kws{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.kw{
+  font-size:.68rem;padding:.18rem .55rem;
+  border:1px solid rgba(201,168,76,.28);border-radius:12px;
+  color:var(--text2);background:rgba(201,168,76,.06);
+}
+.rcb-meaning{line-height:1.85;color:var(--text);font-size:.88rem}
+.rcb-meaning-cn{line-height:1.85;color:var(--text2);font-size:.83rem;margin-top:.5rem;font-style:italic}
+
+/* Overall summary block */
+.summary-block{
+  background:linear-gradient(135deg,rgba(107,63,160,.18),rgba(201,168,76,.08));
+  border:1px solid rgba(155,111,212,.35);border-radius:4px;
+  padding:1.4rem;margin-bottom:1.2rem;
+  animation:fadeUp .55s .1s ease both;
+}
+.summary-block h3{color:var(--purple2);letter-spacing:.1em;margin-bottom:.8rem;font-size:.95rem}
+.summary-text{line-height:1.9;color:var(--text);font-size:.88rem}
+.summary-text-cn{line-height:1.9;color:var(--text2);font-size:.83rem;margin-top:.5rem;font-style:italic}
+
+/* ── AI CHAT ───────────────────────────────── */
+#chat-section{
+  max-width:860px;margin:1.5rem auto 3rem;
+  background:rgba(19,16,42,.8);border:1px solid rgba(155,111,212,.28);
+  border-radius:4px;overflow:hidden;display:none;
+  backdrop-filter:blur(6px);
+}
+.chat-header{
+  padding:.8rem 1.2rem;background:rgba(107,63,160,.18);
+  border-bottom:1px solid rgba(155,111,212,.2);
+  display:flex;align-items:center;gap:.6rem;
+}
+.chat-header-icon{font-size:1.1rem}
+.chat-header-title{color:var(--purple2);font-size:.85rem;letter-spacing:.1em}
+.chat-header-model{font-size:.7rem;color:var(--text2);margin-left:auto}
+#chat-messages{
+  padding:1rem;max-height:380px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:.8rem;
+}
+.msg{
+  max-width:85%;padding:.75rem 1rem;border-radius:4px;
+  font-size:.85rem;line-height:1.75;
+}
+.msg.oracle{
+  align-self:flex-start;
+  background:rgba(107,63,160,.18);border:1px solid rgba(155,111,212,.25);
+  color:var(--text);
+}
+.msg.user{
+  align-self:flex-end;
+  background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);
+  color:var(--gold2);
+}
+.msg.thinking{
+  align-self:flex-start;color:var(--text2);font-style:italic;font-size:.8rem;
+  background:rgba(26,26,46,.5);border:1px solid rgba(201,168,76,.1);
+}
+.chat-input-row{
+  display:flex;gap:.5rem;padding:.8rem 1rem;
+  border-top:1px solid rgba(155,111,212,.18);
+}
+#chat-input{
+  flex:1;padding:.65rem .9rem;background:rgba(13,11,26,.9);
+  border:1px solid rgba(155,111,212,.3);color:var(--text);
+  font-family:Georgia,serif;font-size:.85rem;border-radius:2px;outline:none;
+  transition:border-color .3s;
+}
+#chat-input:focus{border-color:var(--purple2)}
+#chat-input::placeholder{color:var(--text2)}
+#chat-send{
+  padding:.65rem 1.2rem;border:1px solid var(--purple2);
+  background:rgba(107,63,160,.2);color:var(--purple2);
+  cursor:pointer;font-family:Georgia,serif;font-size:.85rem;
+  border-radius:2px;transition:all .3s;white-space:nowrap;
+}
+#chat-send:hover{background:rgba(107,63,160,.38)}
+#chat-send:disabled{opacity:.4;cursor:not-allowed}
+.back-to-cards-btn{
+  display:inline-flex;align-items:center;gap:.45rem;
+  margin:1.2rem auto 0;padding:.55rem 1.4rem;
+  background:transparent;border:1px solid rgba(201,168,76,.28);
+  color:rgba(201,168,76,.7);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;
+  letter-spacing:.12em;border-radius:2px;transition:all .3s;
+  text-decoration:none;
+}
+.back-to-cards-btn:hover{background:rgba(201,168,76,.1);color:var(--gold)}
+/* Slots become jump-links after reveal */
+.sel-slot.revealed .card-flip-wrap{cursor:pointer}
+.sel-slot.revealed .card-flip-wrap:hover .cf-front{
+  filter:drop-shadow(0 0 10px rgba(201,168,76,.6));
+}
+.save-reading-btn{
+  display:block;width:fit-content;margin:0 auto 1rem;
+  padding:.75rem 2rem;border:1px solid rgba(155,111,212,.4);
+  background:rgba(107,63,160,.14);color:var(--purple2);
+  cursor:pointer;font-family:Georgia,serif;font-size:.85rem;letter-spacing:.1em;
+  border-radius:2px;transition:all .3s;
+}
+.save-reading-btn:hover{background:rgba(107,63,160,.28)}
+
+/* ── GUIDE MODAL ─────────────────────────────── */
+#guide-modal{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;
+}
+#guide-modal.open{display:flex}
+.guide-box{
+  background:var(--bg2);border:1px solid rgba(201,168,76,.25);
+  border-radius:4px;padding:2rem 2.2rem;width:min(560px,94vw);
+  position:relative;max-height:88vh;overflow-y:auto;
+}
+.guide-section{margin-bottom:1.6rem}
+.guide-section-title{
+  color:var(--gold);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:.7rem;padding-bottom:.35rem;border-bottom:1px solid rgba(201,168,76,.15);
+}
+.guide-section p{color:var(--text2);font-size:.82rem;line-height:1.75;margin-bottom:.5rem}
+.guide-section ul{color:var(--text2);font-size:.82rem;line-height:1.75;padding-left:1.2rem;margin-bottom:.5rem}
+.guide-section li{margin-bottom:.25rem}
+.guide-ritual{
+  border:1px solid rgba(201,168,76,.18);border-radius:3px;
+  padding:.8rem 1rem;background:rgba(201,168,76,.04);
+  font-style:italic;color:var(--text2);font-size:.8rem;line-height:1.8;text-align:center;
+  margin-top:.6rem;
+}
+.guide-open-btn{
+  background:none;border:1px solid rgba(201,168,76,.2);color:var(--text2);
+  cursor:pointer;font-family:Georgia,serif;font-size:.7rem;letter-spacing:.1em;
+  padding:.3rem .7rem;border-radius:2px;transition:all .3s;
+  display:inline-block;margin-bottom:.6rem;
+}
+.guide-open-btn:hover{color:var(--gold);border-color:rgba(201,168,76,.5)}
+/* ── SETTINGS MODAL ────────────────────────── */
+#settings-modal{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+}
+#settings-modal.open{display:flex}
+.modal-box{
+  background:var(--bg2);border:1px solid rgba(201,168,76,.28);
+  border-radius:4px;padding:2rem;width:min(480px,92vw);
+  position:relative;max-height:90vh;overflow-y:auto;
+}
+.modal-title{color:var(--gold);letter-spacing:.15em;margin-bottom:1.5rem;font-size:1rem}
+.modal-close{
+  position:absolute;top:.8rem;right:.8rem;
+  background:none;border:none;color:var(--text2);
+  cursor:pointer;font-size:1.2rem;line-height:1;
+}
+.modal-close:hover{color:var(--text)}
+.modal-label{font-size:.72rem;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem}
+.modal-select,.modal-input{
+  width:100%;padding:.65rem .9rem;background:rgba(13,11,26,.9);
+  border:1px solid rgba(201,168,76,.28);color:var(--text);
+  font-family:Georgia,serif;font-size:.88rem;border-radius:2px;
+  margin-bottom:1.2rem;outline:none;
+}
+.modal-select:focus,.modal-input:focus{border-color:var(--gold)}
+option{background:var(--bg2)}
+.modal-hint{font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:1.2rem}
+.model-info{margin:5px 0 12px;min-height:1.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.model-tag{display:inline-block;font-size:.67rem;padding:.15rem .5rem;border-radius:3px;font-family:sans-serif;letter-spacing:.02em;white-space:nowrap}
+.model-tag-free{background:rgba(76,175,80,.12);color:#81c784;border:1px solid rgba(76,175,80,.3)}
+.model-tag-paid{background:rgba(201,168,76,.08);color:rgba(201,168,76,.7);border:1px solid rgba(201,168,76,.2)}
+.model-tag-free-r{background:rgba(100,200,220,.1);color:#80cdd5;border:1px solid rgba(100,200,220,.25)}
+.model-desc-text{font-size:.73rem;color:var(--text2);line-height:1.4}
+.modal-save-btn{
+  display:block;width:100%;padding:.8rem;
+  background:rgba(201,168,76,.15);border:1px solid var(--gold);
+  color:var(--gold2);cursor:pointer;font-family:Georgia,serif;
+  font-size:.9rem;letter-spacing:.12em;border-radius:2px;transition:all .3s;
+}
+.modal-save-btn:hover{background:rgba(201,168,76,.25)}
+.deck-style-btn.active{background:rgba(201,168,76,.18)!important;color:var(--gold)!important;border-color:var(--gold)!important}
+
+/* ── HISTORY PANEL ─────────────────────────── */
+.hist-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem}
+.hist-title{font-size:1.1rem;color:var(--gold);letter-spacing:.14em}
+.hist-clear{
+  padding:.35rem .9rem;border:1px solid rgba(192,57,43,.4);background:transparent;
+  color:var(--red);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;
+  border-radius:2px;transition:all .3s;
+}
+.hist-clear:hover{background:rgba(192,57,43,.12)}
+.hist-empty{text-align:center;color:var(--text2);padding:4rem 2rem;font-style:italic}
+.hi{
+  background:rgba(26,26,46,.6);border:1px solid rgba(201,168,76,.14);
+  border-radius:4px;padding:1.1rem;margin-bottom:.9rem;cursor:pointer;transition:border-color .3s;
+}
+.hi:hover{border-color:rgba(201,168,76,.38)}
+.hi-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.hi-date{font-size:.72rem;color:var(--text2)}
+.hi-spread{font-size:.72rem;color:var(--gold);letter-spacing:.08em}
+.hi-q{font-style:italic;color:var(--text);font-size:.88rem;margin-bottom:.4rem}
+.hi-cards{font-size:.72rem;color:var(--text2)}
+
+/* ── NOTIFICATION ──────────────────────────── */
+.notif{
+  position:fixed;bottom:2rem;right:2rem;
+  padding:.75rem 1.4rem;background:rgba(26,26,46,.96);
+  border:1px solid var(--gold);color:var(--gold2);
+  font-size:.82rem;border-radius:2px;
+  transform:translateY(80px);opacity:0;transition:all .4s;z-index:999;
+  pointer-events:none;
+}
+.notif.show{transform:translateY(0);opacity:1}
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.28);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,.48)}
+
+/* ── Streaming cursor ──────────────────────── */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+[data-streaming]::after{
+  content:'▋';display:inline;
+  animation:blink .9s step-end infinite;
+  color:var(--gold);margin-left:1px;
+}
+
+/* ── Gallery ───────────────────────────────── */
+.gallery-deck-section{
+  background:rgba(26,26,46,.55);border:1px solid rgba(201,168,76,.15);
+  border-radius:5px;margin-bottom:1.1rem;overflow:hidden;
+}
+.gallery-deck-header{
+  display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;cursor:pointer;
+  transition:background .25s;
+}
+.gallery-deck-header:hover{background:rgba(201,168,76,.06)}
+.gallery-deck-info{flex:1;min-width:0}
+.gallery-deck-name{color:var(--gold);font-size:.9rem;letter-spacing:.08em;margin-bottom:.25rem}
+.gallery-deck-year{color:var(--text2);font-size:.72rem}
+.gallery-deck-back-wrap{width:42px;height:70px;flex-shrink:0;border-radius:3px;overflow:hidden;border:1px solid rgba(201,168,76,.3)}
+.gallery-back-img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery-back-css{
+  width:100%;height:100%;
+  background:linear-gradient(160deg,#0a1428,#160a26,#0d1b3e);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;color:rgba(201,168,76,.5);
+}
+.gallery-use-btn{
+  padding:.4rem .8rem;border:1px solid rgba(201,168,76,.4);
+  background:transparent;color:var(--gold2);cursor:pointer;
+  font-family:Georgia,serif;font-size:.75rem;border-radius:2px;
+  flex-shrink:0;transition:all .25s;white-space:nowrap;
+}
+.gallery-use-btn:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+.gallery-expand-icon{color:var(--text2);font-size:.85rem;flex-shrink:0}
+.gallery-deck-desc{
+  padding:0 1.2rem .8rem;color:var(--text2);font-size:.78rem;line-height:1.6;
+}
+.gallery-cards-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;
+  padding:.3rem 1.2rem 1rem;
+}
+.gallery-card-thumb{text-align:center}
+.gallery-card-thumb img{
+  width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:3px;
+  border:1px solid rgba(201,168,76,.2);display:block;
+  transition:transform .2s,box-shadow .2s;
+}
+.gallery-card-thumb img:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(201,168,76,.35)}
+.gallery-card-name{font-size:.62rem;color:var(--text2);margin-top:.3rem;line-height:1.2}
+.gallery-load-more{
+  width:100%;padding:.5rem;background:transparent;border:none;border-top:1px solid rgba(201,168,76,.12);
+  color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;
+  transition:color .2s;margin:0;
+}
+.gallery-load-more:hover{color:var(--gold)}
+@media(max-width:600px){
+  .gallery-cards-grid{grid-template-columns:repeat(3,1fr)}
+  .gallery-deck-header{gap:.6rem;padding:.8rem}
+}
+
+/* ── Responsive ────────────────────────────── */
+
+@media(max-width:600px){
+  .spread-grid{grid-template-columns:repeat(2,1fr) !important}
+  .header-title{font-size:.88rem}
+
+  /* 扇形牌堆：高度适配手机，支持横向滚动 */
+  #fan-stage-wrap{
+    height:240px;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:none;
+    scrollbar-width:none;
+  }
+  #fan-stage-wrap::-webkit-scrollbar{display:none}
+  #fan-stage{
+    min-width:max-content;
+    padding:0 16px;
+  }
+
+  /* 抽牌区：横向滚动，丝滑 */
+  :root{--card-w:58px;--card-h:100px;--card-w-lg:82px;--card-h-lg:141px}
+  #selected-row{
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none;
+    padding-bottom:.8rem;
+    padding-left:12px;
+    padding-right:12px;
+  }
+  #selected-row::-webkit-scrollbar{display:none}
+  #selected-row .selected-slots{
+    flex-wrap:nowrap;
+    padding-bottom:4px;
+  }
+  /* 让每张牌在滚动时有吸附感 */
+  #selected-row .card-flip-wrap{
+    scroll-snap-align:start;
+    flex-shrink:0;
+  }
+
+  /* 各阵法最小宽度（确保卡牌完整显示，可横滑） */
+  .selected-slots.celtic-layout,.selected-slots.lifetree-layout{min-width:500px}
+  .selected-slots.horseshoe-layout{min-width:580px}
+  .selected-slots.lovecross-layout,.selected-slots.twochoices-layout{min-width:290px}
+  .selected-slots.pentagram-layout{min-width:270px}
+
+  /* 单张解读卡片：字号适配手机 */
+  .rcb{padding:1rem}
+  .rcb-img{width:52px;height:90px}
+  .rcb-meaning,.rcb-meaning-cn{font-size:.84rem}
+
+  /* 牌面图片 label 字号 */
+  .cf-name-label{font-size:.6rem}
+}
+</style>
+</head>
+<body>
+<canvas id="stars-canvas"></canvas>
+<div id="app">
+
+<!-- ═══════════════ INTRO ═══════════════ -->
+<div id="intro">
+  <div class="intro-glyph">☽✦☾</div>
+  <h1 class="intro-title">TAROT ORACLE</h1>
+  <p class="intro-sub">塔罗神谕 · Ancient Wisdom Revealed</p>
+  <div class="lang-row">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('zh')">中文</button>
+  </div>
+  <button class="enter-btn" onclick="enterApp()">✦ ENTER THE ORACLE ✦</button>
+</div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div id="main">
+
+  <header class="header">
+    <div class="header-title">☽ TAROT ORACLE · 塔罗神谕 ☾</div>
+    <div class="header-right">
+      <button class="nav-btn active" id="btn-reading" onclick="showPanel('reading')" data-i18n-reading>Reading</button>
+      <button class="nav-btn" id="btn-history" onclick="showPanel('history')" data-i18n-history>History</button>
+      <button class="nav-btn" id="btn-gallery" onclick="showPanel('gallery')">牌库</button>
+      <a class="help-btn" id="btn-help" href="https://docs.qq.com/doc/DRWNxQ21wTWp5TUxT" target="_blank" rel="noopener" title="常见问题 / FAQ"><span id="help-btn-label">？帮助</span></a>
+      <button class="support-btn" id="btn-support" onclick="openSupport()" title="支持作者 / Support"><span class="heart">❤</span> <span id="support-btn-label">支持</span></button>
+      <button class="settings-btn" onclick="openSettings()" title="AI Settings" aria-label="AI 设置 / Settings">⚙</button>
+    </div>
+  </header>
+
+  <!-- ─── Daily Card Banner ─── -->
+  <div id="daily-banner" style="display:none;max-width:860px;margin:.8rem auto 0;padding:.75rem 1.2rem;background:rgba(107,63,160,.13);border:1px solid rgba(155,111,212,.25);border-radius:4px;align-items:center;gap:1rem;flex-wrap:wrap;cursor:pointer" onclick="toggleDailyReading()">
+    <div style="font-size:.7rem;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap" id="daily-label">Today's Card</div>
+    <img id="daily-img" style="height:52px;border-radius:3px;border:1px solid rgba(201,168,76,.3);flex-shrink:0" src="" alt="">
+    <div style="flex:1;min-width:120px">
+      <div style="color:var(--gold);font-size:.88rem" id="daily-name"></div>
+      <div style="color:var(--text2);font-size:.75rem;margin-top:.2rem" id="daily-kw"></div>
+      <div style="font-size:.6rem;color:var(--text2);opacity:.5;margin-top:.15rem" id="daily-tap-hint"></div>
+    </div>
+    <button onclick="event.stopPropagation();dismissDaily()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:.2rem .4rem">✕</button>
+  </div>
+  <div id="daily-reading" style="display:none;max-width:860px;margin:0 auto;padding:.8rem 1.2rem;background:rgba(107,63,160,.08);border:1px solid rgba(155,111,212,.15);border-top:none;border-radius:0 0 4px 4px;font-size:.8rem;color:var(--text2);line-height:1.7"></div>
+
+  <!-- ─── Reading Panel ─── -->
+  <div id="panel-reading" class="panel active">
+    <div class="controls-bar">
+      <!-- Step 1: Question first -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+        <div class="section-label" id="lbl-q" style="margin-bottom:0">Your Question</div>
+        <button class="guide-open-btn" id="guide-btn" onclick="openGuide()">☽ What is Tarot?</button>
+      </div>
+      <textarea class="question-input" id="q-input" rows="2"></textarea>
+
+      <!-- Step 2: Spread selection (shown after question, with recommendation) -->
+      <div id="spread-section">
+        <div class="section-label" id="lbl-spread">Choose Your Spread</div>
+        <div id="spread-recommend" class="spread-recommend" style="display:none"></div>
+        <div class="spread-grid" id="spread-grid"></div>
+        <div id="spread-desc" class="spread-desc"></div>
+      </div>
+
+      <label id="major-only-row" for="major-only-check"
+        style="display:flex;align-items:center;gap:.55rem;margin:.6rem 0 .2rem;cursor:pointer;color:var(--text2);font-size:.8rem;user-select:none">
+        <input type="checkbox" id="major-only-check" onchange="onMajorOnlyChange()"
+          style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0">
+        <span id="lbl-major-only">仅用 22 张大阿尔卡那抽牌 · Major Arcana only (22 cards)</span>
+      </label>
+
+      <button class="shuffle-btn" id="shuffle-btn" onclick="startShuffle()">✦ SHUFFLE &amp; SPREAD ✦</button>
+    </div>
+
+    <!-- Fan stage -->
+    <div id="fan-stage-wrap">
+      <p class="fan-instruction" id="fan-instr">Click a card to draw it into your reading</p>
+      <div id="fan-stage"></div>
+    </div>
+
+    <!-- Selected cards row -->
+    <div id="selected-row">
+      <p class="selected-label" id="sel-label">Your drawn cards</p>
+      <div class="selected-slots" id="selected-slots"></div>
+    </div>
+
+    <!-- Reveal button -->
+    <div style="text-align:center">
+      <button id="reveal-btn" onclick="revealAll()"></button>
+    </div>
+
+    <!-- Readings output -->
+    <div id="readings-output"></div>
+
+    <!-- Inline tip / donation nudge (shown after reading, before chat) -->
+    <div id="tip-banner">
+      <span class="tip-text" id="tip-text">✦ <em id="tip-em">如果这次解读对你有所启发</em>，欢迎请作者喝杯茶 ☕</span>
+      <button class="tip-btn" id="tip-btn" onclick="dismissTipBanner();openSupport()">❤ 支持作者</button>
+      <button class="tip-close" onclick="dismissTipBanner()" title="关闭">✕</button>
+    </div>
+
+    <!-- AI Chat -->
+    <div id="chat-section">
+      <div class="chat-header">
+        <span class="chat-header-icon">🔮</span>
+        <span class="chat-header-title" id="chat-title">Ask the Oracle</span>
+        <span class="chat-header-model" id="chat-model-label"></span>
+      </div>
+      <div id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ask a follow-up question…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button id="chat-send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── History Panel ─── -->
+  <div id="panel-history" class="panel">
+    <div class="hist-top">
+      <div class="hist-title" id="hist-title">Reading History</div>
+      <button class="hist-clear" onclick="clearHistory()" id="hist-clear-btn">Clear All</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ─── Gallery Panel ─── -->
+  <div id="panel-gallery" class="panel">
+    <div style="text-align:center;margin-bottom:1.8rem">
+      <div style="color:var(--gold);letter-spacing:.2em;font-size:.9rem;margin-bottom:.5rem">✦ 牌库 · Card Gallery ✦</div>
+      <div style="color:var(--text2);font-size:.78rem;line-height:1.6">欣赏五套牌面风格 · 点击展开查看大阿尔卡那</div>
+    </div>
+    <div id="gallery-content"></div>
+  </div>
+
+</div><!-- #main -->
+</div><!-- #app -->
+
+<!-- ═══════════════ SETTINGS MODAL ═══════════════ -->
+<div id="settings-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSettings()" aria-label="关闭 / Close">✕</button>
+    <div class="modal-title" id="modal-title">⚙ Oracle Settings</div>
+
+    <div class="modal-label">牌面风格 · Card Art Style</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem">
+      <button class="deck-style-btn" data-style="rws" onclick="setDeckStyle('rws')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        韦特牌 Rider-Waite
+      </button>
+      <button class="deck-style-btn" data-style="marseille" onclick="setDeckStyle('marseille')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        马赛塔罗 Marseille
+      </button>
+      <button class="deck-style-btn" data-style="xiyouji" onclick="setDeckStyle('xiyouji')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        🐒 西游记
+      </button>
+      <button class="deck-style-btn" data-style="cartoon" onclick="setDeckStyle('cartoon')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        🎨 卡通手绘风
+      </button>
+      <button class="deck-style-btn" data-style="hj" onclick="setDeckStyle('hj')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        ✦ 黑金手绘风
+      </button>
+      <button class="deck-style-btn" data-style="cat" onclick="setDeckStyle('cat')"
+        style="padding:.55rem .4rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.78rem;border-radius:2px;transition:all .3s">
+        🐱 喵喵塔罗
+      </button>
+    </div>
+    <div id="deck-style-desc" style="font-size:.72rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6"></div>
+
+    <div class="modal-label">神谕人设 · Oracle Persona</div>
+    <select class="modal-select" id="persona-select" onchange="onPersonaChange()">
+      <option value="mirror">玄镜 — 以反问引导，话少意深（苏格拉底式）</option>
+      <option value="astrologer">星官 — 古典神秘，典雅优美，引用天象</option>
+      <option value="healer">治愈者 — 温柔共情，心理咨询师风格</option>
+      <option value="philosopher">暗夜哲人 — 荣格式，分析阴影与原型，直击痛处</option>
+    </select>
+    <div class="model-info" id="persona-info" style="margin-bottom:.8rem"></div>
+
+    <div class="modal-label" id="modal-lbl-ai">AI Reading Engine</div>
+    <select class="modal-select" id="ai-engine-select" onchange="onEngineChange()">
+      <option value="builtin">内置神谕（离线·模板）</option>
+      <option value="claude">Claude (Anthropic)</option>
+      <option value="openai">GPT-4o (OpenAI)</option>
+      <option value="grok">Grok (xAI)</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="qwen">通义千问 (Qwen)</option>
+      <option value="zhipu">智谱 GLM</option>
+      <option value="minimax">MiniMax</option>
+      <option value="gemini">Gemini · Google（有免费额度）</option>
+      <option value="kimi">Kimi (月之暗面)</option>
+      <option value="doubao">豆包 (ByteDance)</option>
+      <option value="custom">自定义 / 中转站（OpenAI 兼容）</option>
+    </select>
+
+    <div id="model-section" style="display:none">
+      <div class="modal-label" id="modal-lbl-model">Model</div>
+      <select class="modal-select" id="model-select" onchange="onModelChange()"></select>
+      <div class="model-info" id="model-info"></div>
+    </div>
+
+    <div id="custom-model-section" style="display:none">
+      <div class="modal-label" id="modal-lbl-custom-model">自定义模型名 · Custom Model</div>
+      <input type="text" class="modal-input" id="custom-model-input" placeholder="e.g. gemini-2.5-pro · gpt-4.1 · claude-opus-4-6">
+      <div class="modal-hint" id="modal-hint-custom-model">填写后将覆盖上方下拉所选模型；可接入官方未列出的更多模型。留空则使用所选模型。</div>
+    </div>
+
+    <div id="api-url-section" style="display:none">
+      <div class="modal-label" id="modal-lbl-url">API 网址 / 中转站 · API URL</div>
+      <input type="text" class="modal-input" id="api-url-input"
+        placeholder="https://gcli.ggchan.dev/v1/chat/completions"
+        onblur="normalizeApiUrlInput(this)">
+      <div id="api-url-autocomplete-note" style="display:none;font-size:.72rem;color:var(--gold);margin:.25rem 0 0 .1rem">✓ <span id="api-url-autocomplete-text"></span></div>
+      <div class="modal-hint" id="modal-hint-url">直接粘贴域名即可，系统会自动补全为完整接口地址。<br>例：<code style="font-size:.75em;color:rgba(201,168,76,.8)">https://gcli.ggchan.dev</code> → <code style="font-size:.75em;color:rgba(201,168,76,.8)">https://gcli.ggchan.dev/v1/chat/completions</code></div>
+    </div>
+
+    <div id="api-key-section" style="display:none">
+      <div class="modal-label" id="modal-lbl-key">API Key</div>
+      <div style="position:relative">
+        <input type="password" class="modal-input" id="api-key-input" placeholder="sk-…" style="padding-right:2.6rem">
+        <button onclick="toggleApiKeyVisibility()" id="api-key-eye" title="显示/隐藏"
+          style="position:absolute;right:.6rem;top:0;bottom:0;margin:auto;height:1.2rem;background:none;border:none;cursor:pointer;color:var(--text2);font-size:.95rem;padding:0;line-height:1;display:flex;align-items:center">👁</button>
+      </div>
+      <div class="modal-hint" id="modal-hint">Your key is stored locally in your browser only and never sent anywhere except the respective AI API.</div>
+    </div>
+
+    <button class="modal-save-btn" onclick="saveSettings()" id="modal-save">Save Settings</button>
+
+    <div style="margin-top:1rem;border-top:1px solid rgba(201,168,76,.15);padding-top:1rem">
+      <div class="modal-label" id="modal-lbl-backup">设置备份 · Backup</div>
+      <div style="display:flex;gap:.6rem">
+        <button onclick="exportSettings()"
+          style="flex:1;padding:.5rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.8rem;border-radius:2px;transition:all .3s"
+          onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+          onmouseout="this.style.borderColor='rgba(201,168,76,.3)';this.style.color='var(--text2)'">
+          ⬆ 导出设置
+        </button>
+        <button onclick="importSettings()"
+          style="flex:1;padding:.5rem;border:1px solid rgba(201,168,76,.3);background:transparent;color:var(--text2);cursor:pointer;font-family:Georgia,serif;font-size:.8rem;border-radius:2px;transition:all .3s"
+          onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+          onmouseout="this.style.borderColor='rgba(201,168,76,.3)';this.style.color='var(--text2)'">
+          ⬇ 导入设置
+        </button>
+      </div>
+      <div style="font-size:.7rem;color:var(--text2);margin-top:.5rem;line-height:1.5" id="modal-hint-backup">
+        导出：将当前设置（含API Key）复制为文本。导入：粘贴之前导出的文本以还原设置。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SUPPORT / DONATION MODAL ═══════════════ -->
+<div id="support-modal" onclick="if(event.target===this)closeSupport()">
+  <div class="support-box">
+    <button class="modal-close" onclick="closeSupport()" aria-label="关闭 / Close" style="position:absolute;top:.6rem;right:.8rem;background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer">✕</button>
+    <div class="support-title" id="support-title">❤ 支持作者</div>
+    <div class="support-sub" id="support-sub">如果这个小工具帮到了你，欢迎请作者喝杯茶 ☕<br>你的支持是它继续运转的动力。</div>
+    <div class="qr-row">
+      <div class="qr-col">
+        <div class="qr-type-label" id="lbl-alipay">支付宝</div>
+        <div class="qr-wrap">
+          <img src="打赏码/alipay.png" alt="支付宝收款码"
+            onerror="this.onerror=null;this.src='打赏码/alipay.jpg';this.addEventListener('error',function(){this.style.display='none';this.nextElementSibling.style.display='block';},{once:true});">
+          <div class="qr-fallback" style="display:none">暂无<br>alipay.png</div>
+        </div>
+      </div>
+      <div class="qr-col">
+        <div class="qr-type-label" id="lbl-wechat">微信</div>
+        <div class="qr-wrap">
+          <img src="打赏码/WeChat.jpg" alt="微信收款码"
+            onerror="this.onerror=null;this.src='打赏码/WeChat.png';this.addEventListener('error',function(){this.style.display='none';this.nextElementSibling.style.display='block';},{once:true});">
+          <div class="qr-fallback" style="display:none">暂无<br>WeChat.jpg</div>
+        </div>
+      </div>
+    </div>
+    <div class="qr-caption" id="support-caption">扫码打赏 · 桥下秋水</div>
+    <div class="support-thanks" id="support-thanks">✦ 无论金额，都是温柔的回响 ✦</div>
+  </div>
+</div>
+
+<!-- ═══════════════ GUIDE MODAL ═══════════════ -->
+<div id="guide-modal">
+  <div class="guide-box">
+    <button class="modal-close" onclick="closeGuide()" aria-label="关闭 / Close">✕</button>
+    <div class="modal-title" id="guide-title" style="color:var(--gold);letter-spacing:.15em;margin-bottom:1.5rem;font-size:1rem">☽ The Tarot Oracle · Guide</div>
+
+    <div class="guide-section" id="guide-sec-what">
+      <div class="guide-section-title" id="guide-lbl-what">What is Tarot?</div>
+      <p id="guide-p-what1">Tarot is a set of 78 cards — each a mirror of the human experience. The 22 Major Arcana tell the story of the soul's journey; the 56 Minor Arcana map everyday life across four suits: Wands (fire · will), Cups (water · feeling), Swords (air · mind), and Pentacles (earth · body).</p>
+      <p id="guide-p-what2">The cards don't predict a fixed future — they reveal energies, patterns, and possibilities already present in your situation. A reading is a conversation between your unconscious and the symbols on the cards.</p>
+    </div>
+
+    <div class="guide-section" id="guide-sec-ask">
+      <div class="guide-section-title" id="guide-lbl-ask">How to Ask a Good Question</div>
+      <ul>
+        <li id="guide-li-1"><b>Open questions work best.</b> "What energy surrounds my career right now?" reveals more than "Will I get the job?"</li>
+        <li id="guide-li-2"><b>Use "I" language.</b> Ask about your own energy and choices — not what others will do.</li>
+        <li id="guide-li-3"><b>Be specific about the situation,</b> not the desired answer. The cards respond to honesty.</li>
+        <li id="guide-li-4"><b>No question is required.</b> You can draw with an open mind and let the cards speak.</li>
+      </ul>
+      <div class="guide-ritual" id="guide-examples">
+        ✦ "What do I need to know about this relationship?" &nbsp;·&nbsp; "Where is my energy blocked?" &nbsp;·&nbsp; "What is the lesson in this situation?" &nbsp;·&nbsp; "What should I focus on this month?"
+      </div>
+    </div>
+
+    <div class="guide-section" id="guide-sec-ritual">
+      <div class="guide-section-title" id="guide-lbl-ritual">Creating the Right Space</div>
+      <p id="guide-p-ritual1">Tarot works best when you slow down and arrive fully. You don't need candles or crystals — you need presence.</p>
+      <ul>
+        <li id="guide-li-r1">Take three slow breaths before you begin</li>
+        <li id="guide-li-r2">Silence your phone; close other tabs</li>
+        <li id="guide-li-r3">Hold your question in your mind — don't rush to type it. Let it settle</li>
+        <li id="guide-li-r4">When the fan opens, pause. Notice which cards pull your attention</li>
+        <li id="guide-li-r5">After the reading, sit with what arises — don't immediately explain it away</li>
+      </ul>
+    </div>
+
+    <div class="guide-section" id="guide-sec-spreads">
+      <div class="guide-section-title" id="guide-lbl-spreads">Choosing a Spread</div>
+      <ul>
+        <li id="guide-li-s1"><b>Single Card</b> — a daily focus, a quick answer, a yes/no</li>
+        <li id="guide-li-s2"><b>Three Card</b> — past / present / future; situation / action / outcome</li>
+        <li id="guide-li-s3"><b>Love Cross</b> — relationship dynamics between you and another person</li>
+        <li id="guide-li-s4"><b>Two Choices</b> — when you're deciding between two clear paths</li>
+        <li id="guide-li-s5"><b>Horseshoe</b> — a thorough 7-card view with hidden influences and advice</li>
+        <li id="guide-li-s6"><b>Celtic Cross</b> — the classic 10-card deep dive; for complex situations</li>
+        <li id="guide-li-s7"><b>Tree of Life</b> — Kabbalistic; for spiritual and life-purpose questions</li>
+      </ul>
+      <p id="guide-p-spreads2" style="margin-top:.5rem">The oracle will suggest a spread based on your question — you can always change it.</p>
+    </div>
+
+    <button onclick="closeGuide()" style="display:block;width:100%;padding:.75rem;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.08);color:var(--gold);cursor:pointer;font-family:Georgia,serif;font-size:.82rem;letter-spacing:.12em;border-radius:2px;transition:all .3s;margin-top:.5rem" id="guide-begin-btn">✦ Begin Your Reading ✦</button>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<footer style="text-align:center;padding:1.6rem 1rem 2.2rem;color:var(--text2);font-size:.68rem;line-height:1.7;opacity:.72">
+  塔罗神谕 · 牌面为随机抽取，结果仅供<b>娱乐与自我觉察</b>，不构成医疗、法律、投资或任何专业建议，请理性看待。<br>
+  你的 API 密钥仅保存在本机浏览器（localStorage），不会上传。
+</footer>
+
+<script src="html2canvas.min.js"></script>
+<script src="waite.js"></script>
+<script src="waite_cn.js"></script>
+<script src="cards.js"></script>
+<script src="xyj_lore.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
