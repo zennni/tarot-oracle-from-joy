@@ -20,7 +20,7 @@ export function sanitizeEnvironment(environment: NodeJS.ProcessEnv): Record<stri
   return sanitized;
 }
 
-async function loadCodexConstructor() {
+export async function loadCodexConstructor() {
   const module = await import("@openai/" + "codex-sdk");
   if (typeof module.Codex !== "function") throw new Error("codex_constructor_unavailable");
   return module.Codex;

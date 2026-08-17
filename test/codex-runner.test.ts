@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createCodexRunner, sanitizeEnvironment } from "../local-codex/codex-runner.js";
+import * as codexRunnerModule from "../local-codex/codex-runner.js";
 
-test("default pinned ESM loader exposes the named Codex class without starting a thread", async () => {
-  const module = await import("@openai/codex-sdk");
-  assert.equal(typeof module.Codex, "function");
+const { createCodexRunner, sanitizeEnvironment } = codexRunnerModule;
+
+test("production loader returns the pinned named Codex class without starting a thread", async () => {
+  const loader = Reflect.get(codexRunnerModule, "loadCodexConstructor") as unknown;
+  assert.equal(typeof loader, "function");
+  const constructor = await (loader as () => Promise<unknown>)();
+  const sdk = await import("@openai/codex-sdk");
+  assert.equal(constructor, sdk.Codex);
 });
 
 test("removes API key variables without reading their values", () => {
