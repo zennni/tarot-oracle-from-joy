@@ -23,6 +23,7 @@ test("local UI helper allows only the fixed loopback page", async () => {
   ]) {
     assert.equal(api.isLocalPage(remote), false);
     assert.equal(api.chatUrl(remote), "");
+    assert.equal(api.healthUrl(remote), "");
   }
   assert.match(api.errorText("busy", "zh"), /正在处理/);
   assert.match(api.errorText("upstream_timeout", "en"), /timed out/i);

@@ -1683,6 +1683,7 @@ function getPersonaSystem() {
 
 // ─── AI streaming ─────────────────────────────────────────────────────────────
 async function streamAIResponse(prompt, targetId, onDone) {
+  const isCodexRequest = aiSettings.engine === 'codex';
   const el = document.getElementById(targetId);
   if (!el) return;
   el.innerHTML = `<em>${t('The Oracle is gazing into the cards…','神谕正在凝视牌阵…')}</em>`;
@@ -1693,18 +1694,19 @@ async function streamAIResponse(prompt, targetId, onDone) {
       const prov = AI_PROVIDERS[aiSettings.engine];
       if (!prov) { if (onDone) onDone(); return; }
       const { url, model } = resolveEndpoint();
-      if (aiSettings.engine === 'codex' && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
+      if (isCodexRequest && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
       if (!url) throw new Error(t('No API URL configured — set a relay/base URL in settings.', '未配置 API 网址——请在设置中填写中转站/接口地址。'));
-      const requestApiKey = aiSettings.engine === 'codex' ? '' : aiSettings.apiKey;
-      await streamOpenAICompat(url, model, requestApiKey, prompt, el, onDone);
+      const requestApiKey = isCodexRequest ? '' : aiSettings.apiKey;
+      await streamOpenAICompat(url, model, requestApiKey, prompt, el, onDone, isCodexRequest);
     }
   } catch (err) {
-    const { url, model } = resolveEndpoint();
-    const hint = aiSettings.engine === 'custom'
-      ? t('Check: ① URL must include the full path (e.g. /v1/chat/completions) ② Model name must be filled in ③ API key is correct',
-          '检查：① URL 需含完整路径（如 /v1/chat/completions）② 自定义模型名不能为空 ③ API 密钥正确')
-      : t('Check your API key in settings.', '请在设置中检查 API 密钥。');
-    const errorMessage = aiSettings.engine === 'codex'
+    const hint = isCodexRequest
+      ? ''
+      : aiSettings.engine === 'custom'
+        ? t('Check: ① URL must include the full path (e.g. /v1/chat/completions) ② Model name must be filled in ③ API key is correct',
+            '检查：① URL 需含完整路径（如 /v1/chat/completions）② 自定义模型名不能为空 ③ API 密钥正确')
+        : t('Check your API key in settings.', '请在设置中检查 API 密钥。');
+    const errorMessage = isCodexRequest
       ? escapeHtml(err.message || t('Unknown error','未知错误'))
       : (err.message || t('Unknown error','未知错误'));
     el.innerHTML = `<em style="color:var(--red)">${t('The Oracle is silent.','神谕沉默。')}</em>
@@ -1764,19 +1766,19 @@ function openAICompatHeaders(apiKey) {
   return headers;
 }
 
-async function fetchOpenAICompat(url, options) {
+async function fetchOpenAICompat(url, options, isCodexRequest) {
   try {
     return await fetch(url, options);
   } catch (error) {
-    if (aiSettings.engine === 'codex') {
+    if (isCodexRequest) {
       throw new Error(LocalCodexUI.errorText('unavailable', lang));
     }
     throw error;
   }
 }
 
-async function openAICompatResponseError(response) {
-  if (aiSettings.engine === 'codex') {
+async function openAICompatResponseError(response, isCodexRequest) {
+  if (isCodexRequest) {
     let code = 'upstream_failed';
     try {
       const payload = await response.clone().json();
@@ -1787,13 +1789,13 @@ async function openAICompatResponseError(response) {
   return new Error(`${response.status}: ${await response.text()}`);
 }
 
-async function streamOpenAICompat(url, model, apiKey, prompt, el, onDone) {
+async function streamOpenAICompat(url, model, apiKey, prompt, el, onDone, isCodexRequest) {
   const res = await fetchOpenAICompat(url, {
     method: 'POST',
     headers: openAICompatHeaders(apiKey),
     body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] })
-  });
-  if (!res.ok) throw await openAICompatResponseError(res);
+  }, isCodexRequest);
+  if (!res.ok) throw await openAICompatResponseError(res, isCodexRequest);
   el.innerHTML = '';
   el.setAttribute('data-streaming', '1');
   const reader = res.body.getReader(), dec = new TextDecoder();
@@ -1818,7 +1820,7 @@ async function streamOpenAICompat(url, model, apiKey, prompt, el, onDone) {
 }
 
 // ─── Streaming chat (follow-up) ───────────────────────────────────────────────
-async function streamChatAI(history, el) {
+async function streamChatAI(history, el, isCodexRequest) {
   const system = history.find(m => m.role === 'system')?.content || '';
   const sysPrefix = getPersonaSystem() + '\n\n';
   const chatDirective = '\n\nIMPORTANT: The initial reading has ALREADY been delivered. In follow-up conversation:\n- Do NOT repeat or re-summarize card meanings, symbolism, or interpretations already given\n- Focus directly and concisely on the querent\'s NEW question\n- Add NEW insights, deeper layers, practical advice, or connections not mentioned before\n- If they ask about a specific card, go DEEPER — don\'t restate what was said, explore what wasn\'t\n- Keep responses focused (150-250 words) — this is a conversation, not another full reading\n';
@@ -1827,13 +1829,13 @@ async function streamChatAI(history, el) {
     return await streamClaudeMessages(msgs, sysPrefix + system + chatDirective, el);
   }
   const { url, model } = resolveEndpoint();
-  if (aiSettings.engine === 'codex' && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
+  if (isCodexRequest && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
   if (!url) throw new Error(t('No API URL configured — set a relay/base URL in settings.', '未配置 API 网址——请在设置中填写中转站/接口地址。'));
   const msgs = history.map((m, i) =>
     m.role === 'system' ? { role: 'system', content: sysPrefix + m.content + chatDirective } : m
   );
-  const requestApiKey = aiSettings.engine === 'codex' ? '' : aiSettings.apiKey;
-  return await streamOpenAICompatMessages(url, model, requestApiKey, msgs, el);
+  const requestApiKey = isCodexRequest ? '' : aiSettings.apiKey;
+  return await streamOpenAICompatMessages(url, model, requestApiKey, msgs, el, isCodexRequest);
 }
 
 async function streamClaudeMessages(messages, system, el) {
@@ -1874,13 +1876,13 @@ async function streamClaudeMessages(messages, system, el) {
   return full;
 }
 
-async function streamOpenAICompatMessages(url, model, apiKey, messages, el) {
+async function streamOpenAICompatMessages(url, model, apiKey, messages, el, isCodexRequest) {
   const res = await fetchOpenAICompat(url, {
     method: 'POST',
     headers: openAICompatHeaders(apiKey),
     body: JSON.stringify({ model, stream: true, messages })
-  });
-  if (!res.ok) throw await openAICompatResponseError(res);
+  }, isCodexRequest);
+  if (!res.ok) throw await openAICompatResponseError(res, isCodexRequest);
   el.innerHTML = '';
   el.setAttribute('data-streaming', '1');
   const reader = res.body.getReader(), dec = new TextDecoder();
@@ -1953,6 +1955,7 @@ function addChatMsg(role, text) {
 }
 
 async function sendChat() {
+  const isCodexRequest = aiSettings.engine === 'codex';
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
   if (!msg) return;
@@ -1972,11 +1975,11 @@ async function sendChat() {
   } else {
     const div = addChatMsg('oracle', '');
     try {
-      const full = await streamChatAI(chatHistory, div);
+      const full = await streamChatAI(chatHistory, div, isCodexRequest);
       chatHistory.push({ role: 'assistant', content: full || div.textContent });
     } catch (err) {
       const retryMsg = msg;
-      const errorMessage = aiSettings.engine === 'codex'
+      const errorMessage = isCodexRequest
         ? escapeHtml(err.message || t('Unknown error','未知错误'))
         : t('The Oracle is silent — check your API key.','神谕沉默——请检查API密钥。');
       div.innerHTML = `<span style="color:var(--red)">${errorMessage}</span><br><button onclick="(()=>{this.closest('.msg').remove();document.getElementById('chat-input').value=${JSON.stringify(retryMsg)};sendChat()})()" style="margin-top:.5rem;padding:.3rem .9rem;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;font-family:Georgia,serif;font-size:.75rem">${t('↺ Retry','↺ 点击重试')}</button>`;
