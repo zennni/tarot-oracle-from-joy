@@ -64,7 +64,11 @@ export async function runLauncher(options: {
     };
     server = await dependencies.startServer({ rootDirectory: REPOSITORY_ROOT, runner, authCheck });
   } catch (error) {
-    await dependencies.removeRuntime(runtimeDirectory);
+    try {
+      await dependencies.removeRuntime(runtimeDirectory);
+    } catch {
+      dependencies.log("runtime_cleanup_failed");
+    }
     throw error;
   }
   dependencies.log(`local_codex_ready=${server.origin}`);

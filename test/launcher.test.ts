@@ -66,3 +66,20 @@ test("server startup failure removes only the created runtime", async () => {
   await assert.rejects(() => runLauncher({ noOpen: true, dependencies }), /port_in_use/);
   assert.deepEqual(events.filter((event) => event.startsWith("remove:")), ["remove:C:\\temp\\tarot-runtime"]);
 });
+
+test("preserves the startup error when runtime cleanup fails", async () => {
+  const events: string[] = [];
+  const dependencies = fixture(events);
+  dependencies.startServer = async () => { throw new Error("port_in_use"); };
+  dependencies.removeRuntime = async (path) => {
+    events.push(`remove:${path}`);
+    throw new Error("cleanup_failed");
+  };
+  await assert.rejects(
+    () => runLauncher({ noOpen: true, dependencies }),
+    (error: unknown) => error instanceof Error && error.message === "port_in_use",
+  );
+  assert.deepEqual(events.filter((event) => event.startsWith("remove:")), ["remove:C:\\temp\\tarot-runtime"]);
+  assert.ok(events.includes("log:runtime_cleanup_failed"));
+  assert.equal(events.includes("log:cleanup_failed"), false);
+});
