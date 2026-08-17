@@ -44,7 +44,7 @@
 ### Task 1: Runtime foundation and protocol adapters
 
 **Files:**
-- Create: `.gitignore`
+- Modify: `.gitignore`
 - Create: `package.json`
 - Create: `package-lock.json`
 - Create: `tsconfig.json`
@@ -62,6 +62,7 @@
 Create `.gitignore`:
 
 ```gitignore
+.worktrees/
 node_modules/
 runtime/
 .superpowers/
@@ -436,12 +437,14 @@ test("reports and rejects an expired ChatGPT login without a runner call", async
 test("returns 429 for concurrency and never starts a second runner", async (t) => {
   let calls = 0;
   let release!: () => void;
+  let markStarted!: () => void;
   const blocked = new Promise<void>((resolve) => { release = resolve; });
-  const server = await startLocalServer({ rootDirectory: await fixtureRoot(), port: 0, runner: async () => { calls += 1; await blocked; return "完成"; } });
+  const started = new Promise<void>((resolve) => { markStarted = resolve; });
+  const server = await startLocalServer({ rootDirectory: await fixtureRoot(), port: 0, runner: async () => { calls += 1; markStarted(); await blocked; return "完成"; } });
   t.after(server.close);
   const request = () => fetch(`${server.origin}/v1/chat/completions`, { method: "POST", headers: { "content-type": "application/json", origin: server.origin }, body: body() });
   const first = request();
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await started;
   assert.equal((await request()).status, 429);
   assert.equal(calls, 1);
   release();
