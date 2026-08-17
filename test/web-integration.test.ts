@@ -6,6 +6,10 @@ function count(source: string, marker: string): number {
   return [...source.matchAll(new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))].length;
 }
 
+async function readSource(path: string): Promise<string> {
+  return (await readFile(path, "utf8")).replace(/\r\n?/g, "\n");
+}
+
 function functionBounds(source: string, name: string): { start: number; end: number } {
   const marker = `function ${name}(`;
   const start = source.indexOf(marker);
@@ -90,14 +94,14 @@ function assertRequestIntegration(app: string): void {
 }
 
 test("contains every Local Codex integration marker exactly where required", async () => {
-  const index = await readFile("index.html", "utf8");
-  const app = await readFile("app.js", "utf8");
+  const index = await readSource("index.html");
+  const app = await readSource("app.js");
   assertIntegration(index, app);
 });
 
 test("fails when any required page marker is removed", async () => {
-  const index = await readFile("index.html", "utf8");
-  const app = await readFile("app.js", "utf8");
+  const index = await readSource("index.html");
+  const app = await readSource("app.js");
   const mutations: Array<[string, string, "index" | "app"]> = [
     ['id="local-codex-status"', 'id="removed-status"', "index"],
     ['<script src="local-codex-ui.js"></script>', '<script src="removed.js"></script>', "index"],
@@ -112,12 +116,12 @@ test("fails when any required page marker is removed", async () => {
 });
 
 test("scopes immutable Local Codex context to summary, follow-up, transport, and rendering", async () => {
-  const app = await readFile("app.js", "utf8");
+  const app = await readSource("app.js");
   assertRequestIntegration(app);
 });
 
 test("fails when only one request path or rendering catch loses Local Codex handling", async () => {
-  const app = await readFile("app.js", "utf8");
+  const app = await readSource("app.js");
   const guard = "if (isCodexRequest && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));";
   const mutations: Array<[string, string, string]> = [
     ["streamAIResponse", guard, "removedSummaryGuard()"],
@@ -131,14 +135,14 @@ test("fails when only one request path or rendering catch loses Local Codex hand
 });
 
 test("omits saved API credentials from Local Codex requests", async () => {
-  const app = await readFile("app.js", "utf8");
+  const app = await readSource("app.js");
   assert.equal(count(app, "headers: openAICompatHeaders(apiKey)"), 2);
   assert.equal(count(app, "const requestApiKey = isCodexRequest ? '' : aiSettings.apiKey;"), 2);
   assert.equal(count(app, "'Authorization': 'Bearer ' + apiKey"), 0);
 });
 
 test("preserves provider settings and escapes rendered Local Codex errors", async () => {
-  const app = await readFile("app.js", "utf8");
+  const app = await readSource("app.js");
   assert.ok(count(app, "if (engine !== 'codex')") >= 1);
   assert.ok(count(app, "const cm = aiSettings.engine === 'codex' ? '' : (aiSettings.customModel || '').trim();") >= 1);
   assert.ok(count(app, "escapeHtml(err.message") >= 2);
