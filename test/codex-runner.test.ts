@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createCodexRunner, sanitizeEnvironment } from "../local-codex/codex-runner.js";
 
+test("default pinned ESM loader exposes the named Codex class without starting a thread", async () => {
+  const module = await import("@openai/codex-sdk");
+  assert.equal(typeof module.Codex, "function");
+});
+
 test("removes API key variables without reading their values", () => {
   const environment: NodeJS.ProcessEnv = { SAFE_VALUE: "kept" };
   for (const name of ["OPENAI_API_KEY", "codex_api_key"]) {

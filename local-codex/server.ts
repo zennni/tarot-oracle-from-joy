@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { readFile, realpath, stat } from "node:fs/promises";
-import type { AddressInfo } from "node:net";
+import type { AddressInfo, Socket } from "node:net";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { adaptChatCompletionRequest, RequestValidationError } from "./request-adapter.js";
 import { FIXED_MODEL, formatChatCompletionSse, ResponseValidationError } from "./sse-adapter.js";
@@ -118,19 +118,51 @@ async function staticCandidate(realRoot: string, pathname: string): Promise<{ pa
   return { path: resolvedCandidate, mime };
 }
 
-async function readBoundedBody(request: IncomingMessage, limitBytes: number): Promise<string> {
-  const chunks: Buffer[] = [];
-  let bytes = 0;
-  for await (const chunk of request) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    bytes += buffer.length;
-    if (bytes > limitBytes) {
-      request.resume();
-      throw new PublicHttpError(413, "body_too_large");
-    }
-    chunks.push(buffer);
-  }
-  return Buffer.concat(chunks).toString("utf8");
+async function readBoundedBody(
+  request: IncomingMessage,
+  limitBytes: number,
+  signal: AbortSignal,
+): Promise<string> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    let settled = false;
+    const cleanup = (): void => {
+      request.off("data", onData);
+      request.off("end", onEnd);
+      request.off("error", onError);
+      signal.removeEventListener("abort", onAbort);
+    };
+    const reject = (error: unknown): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      rejectPromise(error);
+    };
+    const onData = (chunk: Buffer | string): void => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      bytes += buffer.length;
+      if (bytes > limitBytes) {
+        request.resume();
+        reject(new PublicHttpError(413, "body_too_large"));
+        return;
+      }
+      chunks.push(buffer);
+    };
+    const onEnd = (): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolvePromise(Buffer.concat(chunks).toString("utf8"));
+    };
+    const onError = (): void => reject(new PublicHttpError(400, "invalid_body"));
+    const onAbort = (): void => reject(signal.reason ?? new Error("request_aborted"));
+    request.on("data", onData);
+    request.once("end", onEnd);
+    request.once("error", onError);
+    signal.addEventListener("abort", onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
 }
 
 function closeServer(server: Server): Promise<void> {
@@ -146,60 +178,59 @@ export async function startLocalServer(options: StartLocalServerOptions): Promis
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const authCheck = options.authCheck ?? (async () => true);
   const controllers = new Set<AbortController>();
+  const sockets = new Set<Socket>();
   let busy = false;
   let actualPort = options.port ?? LOCAL_PORT;
   let origin = "";
 
   const handleCompletion = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     busy = true;
+    const controller = new AbortController();
+    controllers.add(controller);
     let runnerStarted = false;
-    let timer: NodeJS.Timeout | undefined;
     let disconnected = false;
-    let timedOut = false;
+    const onDisconnect = (): void => {
+      if (!response.writableEnded) {
+        disconnected = true;
+        controller.abort(new Error("client_disconnected"));
+      }
+    };
+    request.once("aborted", onDisconnect);
+    response.once("close", onDisconnect);
+    const timer = setTimeout(() => {
+      controller.abort(new PublicHttpError(504, "upstream_timeout"));
+    }, timeoutMs);
     try {
       const contentType = request.headers["content-type"] ?? "";
       if (!contentType.toLowerCase().startsWith("application/json")) {
         throw new PublicHttpError(415, "unsupported_media_type");
       }
-      const rawBody = await readBoundedBody(request, bodyLimitBytes);
+      const rawBody = await readBoundedBody(request, bodyLimitBytes, controller.signal);
       let decoded: unknown;
       try { decoded = JSON.parse(rawBody); } catch { throw new PublicHttpError(400, "invalid_json"); }
       const { prompt } = adaptChatCompletionRequest(decoded);
-      const controller = new AbortController();
-      controllers.add(controller);
-      const onDisconnect = (): void => {
-        if (!response.writableEnded) {
-          disconnected = true;
-          controller.abort();
-        }
-      };
-      request.once("aborted", onDisconnect);
-      response.once("close", onDisconnect);
       const runnerPromise = Promise.resolve().then(() => options.runner(prompt, controller.signal));
       runnerStarted = true;
       void runnerPromise.then(
         () => { busy = false; controllers.delete(controller); },
         () => { busy = false; controllers.delete(controller); },
       );
-      const timeout = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => {
-          timedOut = true;
-          controller.abort();
-          reject(new PublicHttpError(504, "upstream_timeout"));
-        }, timeoutMs);
+      let removeAbortRace = (): void => {};
+      const aborted = new Promise<never>((_resolve, reject) => {
+        const onAbort = (): void => reject(controller.signal.reason ?? new Error("request_aborted"));
+        removeAbortRace = () => controller.signal.removeEventListener("abort", onAbort);
+        controller.signal.addEventListener("abort", onAbort, { once: true });
+        if (controller.signal.aborted) onAbort();
       });
       let content: string;
       try {
-        content = await Promise.race([runnerPromise, timeout]);
+        content = await Promise.race([runnerPromise, aborted]);
       } catch (error) {
-        if (timedOut) throw new PublicHttpError(504, "upstream_timeout");
         if (disconnected || response.destroyed) return;
         if (error instanceof PublicHttpError) throw error;
         throw new PublicHttpError(502, "upstream_failed");
       } finally {
-        if (timer) clearTimeout(timer);
-        request.off("aborted", onDisconnect);
-        response.off("close", onDisconnect);
+        removeAbortRace();
       }
       const sse = formatChatCompletionSse(content);
       response.writeHead(200, {
@@ -209,7 +240,13 @@ export async function startLocalServer(options: StartLocalServerOptions): Promis
       });
       response.end(sse);
     } finally {
-      if (!runnerStarted) busy = false;
+      clearTimeout(timer);
+      request.off("aborted", onDisconnect);
+      response.off("close", onDisconnect);
+      if (!runnerStarted) {
+        busy = false;
+        controllers.delete(controller);
+      }
     }
   };
 
@@ -260,6 +297,10 @@ export async function startLocalServer(options: StartLocalServerOptions): Promis
   };
 
   const server = createServer((request, response) => { void dispatch(request, response); });
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
   let markClosed!: () => void;
   const closed = new Promise<void>((resolvePromise) => { markClosed = resolvePromise; });
   server.once("close", markClosed);
@@ -283,9 +324,15 @@ export async function startLocalServer(options: StartLocalServerOptions): Promis
   }
   actualPort = (address as AddressInfo).port;
   origin = `http://${LOCAL_HOST}:${actualPort}`;
-  const close = async (): Promise<void> => {
-    for (const controller of controllers) controller.abort();
-    await closeServer(server);
+  let closePromise: Promise<void> | undefined;
+  const close = (): Promise<void> => {
+    closePromise ??= (async () => {
+      const closing = closeServer(server);
+      for (const controller of controllers) controller.abort(new Error("server_closing"));
+      for (const socket of sockets) socket.destroy();
+      await closing;
+    })();
+    return closePromise;
   };
   return { host: LOCAL_HOST, port: actualPort, origin, closed, close };
 }

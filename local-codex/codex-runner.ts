@@ -1,27 +1,12 @@
+import type { CodexOptions, ThreadOptions } from "@openai/codex-sdk";
 import type { PromptRunner } from "./server.js";
 import { FIXED_MODEL } from "./sse-adapter.js";
 
-type ClientOptions = {
-  env: Record<string, string>;
-  config: { model_provider: "openai"; forced_login_method: "chatgpt" };
-};
-type ThreadOptions = {
-  model: string;
-  sandboxMode: "read-only";
-  workingDirectory: string;
-  skipGitRepoCheck: true;
-  modelReasoningEffort: "low";
-  networkAccessEnabled: false;
-  webSearchMode: "disabled";
-  approvalPolicy: "never";
-};
 type ThreadLike = {
   run(prompt: string, options: { signal: AbortSignal }): Promise<{ finalResponse: string }>;
 };
 type CodexLike = { startThread(options: ThreadOptions): ThreadLike };
-type CodexConstructor = new (options: ClientOptions) => CodexLike;
-type CodexModule = { Codex: CodexConstructor };
-export type CodexFactory = (options: ClientOptions) => CodexLike | Promise<CodexLike>;
+export type CodexFactory = (options: CodexOptions) => CodexLike | Promise<CodexLike>;
 
 const BLOCKED_KEYS = new Set(["OPENAI_API_KEY", "CODEX_API_KEY"]);
 
@@ -35,8 +20,8 @@ export function sanitizeEnvironment(environment: NodeJS.ProcessEnv): Record<stri
   return sanitized;
 }
 
-async function loadCodexConstructor(): Promise<CodexConstructor> {
-  const module = await import("@openai/" + "codex-sdk") as CodexModule;
+async function loadCodexConstructor() {
+  const module = await import("@openai/" + "codex-sdk");
   if (typeof module.Codex !== "function") throw new Error("codex_constructor_unavailable");
   return module.Codex;
 }

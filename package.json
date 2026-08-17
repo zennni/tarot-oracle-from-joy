@@ -12,11 +12,11 @@
     "verify": "npm test && npm run typecheck && npm run check:web"
   },
   "dependencies": {
-    "@openai/codex-sdk": "0.147.0"
+    "@openai/codex-sdk": "0.147.0",
+    "tsx": "4.23.12"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
-    "tsx": "4.23.12",
     "typescript": "7.0.2"
   }
 }
