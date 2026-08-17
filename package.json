@@ -1,0 +1,22 @@
+{
+  "name": "tarot-oracle-local-codex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "local": "tsx local-codex/launcher.ts",
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "check:web": "node --check app.js && node --check local-codex-ui.js",
+    "verify": "npm test && npm run typecheck && npm run check:web"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "0.147.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "tsx": "4.23.12",
+    "typescript": "7.0.2"
+  }
+}
