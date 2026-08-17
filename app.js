@@ -242,6 +242,7 @@ const TAG_LABELS = {
 };
 
 const AI_PROVIDERS = {
+  codex:   { label: '本地 Codex（ChatGPT 登录）', url: '',                                                                                  model: 'gpt-5.6-luna' },
   openai:   { label: 'GPT-4o (OpenAI)',    url: 'https://api.openai.com/v1/chat/completions',                                             model: 'gpt-4o' },
   grok:     { label: 'Grok (xAI)',         url: 'https://api.x.ai/v1/chat/completions',                                                  model: 'grok-3' },
   deepseek: { label: 'DeepSeek',           url: 'https://api.deepseek.com/chat/completions',                                             model: 'deepseek-chat' },
@@ -256,6 +257,9 @@ const AI_PROVIDERS = {
 
 // Resolve the effective endpoint + model, honoring custom relay URL and free-text model overrides.
 function resolveEndpoint() {
+  if (aiSettings.engine === 'codex') {
+    return { url: LocalCodexUI.chatUrl(window.location), model: 'gpt-5.6-luna' };
+  }
   const prov = AI_PROVIDERS[aiSettings.engine] || {};
   const url   = (aiSettings.apiUrl || '').trim() || prov.url || '';
   const model = (aiSettings.customModel || '').trim() || aiSettings.model || prov.model || '';
@@ -396,6 +400,10 @@ function applyLang() {
   document.getElementById('modal-hint').textContent    = t(
     'Your key is stored only in your browser and sent solely to the chosen AI provider.',
     '密钥仅存储在浏览器本地，只会发送给所选的 AI 服务商。');
+  document.getElementById('local-codex-test').textContent = t('Test Local Codex', '检测本地 Codex');
+  document.getElementById('local-codex-status').textContent = t(
+    'Connection test does not call the model or consume quota.',
+    '连接检测不会调用模型或消耗额度。');
   document.getElementById('modal-save').textContent    = t('Save Settings', '保存设置');
   document.getElementById('fan-instr').textContent     = t(
     'Hover to sense a card · Click to draw it', '悬停感应 · 点击抽取');
@@ -1685,8 +1693,10 @@ async function streamAIResponse(prompt, targetId, onDone) {
       const prov = AI_PROVIDERS[aiSettings.engine];
       if (!prov) { if (onDone) onDone(); return; }
       const { url, model } = resolveEndpoint();
+      if (aiSettings.engine === 'codex' && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
       if (!url) throw new Error(t('No API URL configured — set a relay/base URL in settings.', '未配置 API 网址——请在设置中填写中转站/接口地址。'));
-      await streamOpenAICompat(url, model, aiSettings.apiKey, prompt, el, onDone);
+      const requestApiKey = aiSettings.engine === 'codex' ? '' : aiSettings.apiKey;
+      await streamOpenAICompat(url, model, requestApiKey, prompt, el, onDone);
     }
   } catch (err) {
     const { url, model } = resolveEndpoint();
@@ -1694,9 +1704,12 @@ async function streamAIResponse(prompt, targetId, onDone) {
       ? t('Check: ① URL must include the full path (e.g. /v1/chat/completions) ② Model name must be filled in ③ API key is correct',
           '检查：① URL 需含完整路径（如 /v1/chat/completions）② 自定义模型名不能为空 ③ API 密钥正确')
       : t('Check your API key in settings.', '请在设置中检查 API 密钥。');
+    const errorMessage = aiSettings.engine === 'codex'
+      ? escapeHtml(err.message || t('Unknown error','未知错误'))
+      : (err.message || t('Unknown error','未知错误'));
     el.innerHTML = `<em style="color:var(--red)">${t('The Oracle is silent.','神谕沉默。')}</em>
 <div style="margin:.5rem 0;padding:.45rem .7rem;background:rgba(200,50,50,.12);border:1px solid rgba(255,80,80,.3);border-radius:4px;font-size:.78rem;color:#ff9a9a;word-break:break-all;line-height:1.55">
-  <b>${t('Error:','错误：')}</b> ${err.message || t('Unknown error','未知错误')}
+  <b>${t('Error:','错误：')}</b> ${errorMessage}
 </div>
 <div style="font-size:.75rem;color:var(--text2);margin-bottom:.5rem;line-height:1.55">${hint}</div>
 <button onclick="generateOracleSummary()" style="margin-top:.2rem;padding:.35rem 1rem;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;font-family:Georgia,serif;font-size:.78rem">${t('↺ Retry','↺ 点击重试')}</button>
@@ -1745,13 +1758,42 @@ async function streamClaude(prompt, el, onDone) {
   if (onDone) onDone();
 }
 
+function openAICompatHeaders(apiKey) {
+  const headers = { 'content-type': 'application/json' };
+  if (apiKey) headers.Authorization = 'Bearer ' + apiKey;
+  return headers;
+}
+
+async function fetchOpenAICompat(url, options) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (aiSettings.engine === 'codex') {
+      throw new Error(LocalCodexUI.errorText('unavailable', lang));
+    }
+    throw error;
+  }
+}
+
+async function openAICompatResponseError(response) {
+  if (aiSettings.engine === 'codex') {
+    let code = 'upstream_failed';
+    try {
+      const payload = await response.clone().json();
+      if (typeof payload?.error?.code === 'string') code = payload.error.code;
+    } catch {}
+    return new Error(LocalCodexUI.errorText(code, lang));
+  }
+  return new Error(`${response.status}: ${await response.text()}`);
+}
+
 async function streamOpenAICompat(url, model, apiKey, prompt, el, onDone) {
-  const res = await fetch(url, {
+  const res = await fetchOpenAICompat(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    headers: openAICompatHeaders(apiKey),
     body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] })
   });
-  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  if (!res.ok) throw await openAICompatResponseError(res);
   el.innerHTML = '';
   el.setAttribute('data-streaming', '1');
   const reader = res.body.getReader(), dec = new TextDecoder();
@@ -1785,11 +1827,13 @@ async function streamChatAI(history, el) {
     return await streamClaudeMessages(msgs, sysPrefix + system + chatDirective, el);
   }
   const { url, model } = resolveEndpoint();
+  if (aiSettings.engine === 'codex' && !url) throw new Error(LocalCodexUI.errorText('local_page_required', lang));
   if (!url) throw new Error(t('No API URL configured — set a relay/base URL in settings.', '未配置 API 网址——请在设置中填写中转站/接口地址。'));
   const msgs = history.map((m, i) =>
     m.role === 'system' ? { role: 'system', content: sysPrefix + m.content + chatDirective } : m
   );
-  return await streamOpenAICompatMessages(url, model, aiSettings.apiKey, msgs, el);
+  const requestApiKey = aiSettings.engine === 'codex' ? '' : aiSettings.apiKey;
+  return await streamOpenAICompatMessages(url, model, requestApiKey, msgs, el);
 }
 
 async function streamClaudeMessages(messages, system, el) {
@@ -1831,12 +1875,12 @@ async function streamClaudeMessages(messages, system, el) {
 }
 
 async function streamOpenAICompatMessages(url, model, apiKey, messages, el) {
-  const res = await fetch(url, {
+  const res = await fetchOpenAICompat(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    headers: openAICompatHeaders(apiKey),
     body: JSON.stringify({ model, stream: true, messages })
   });
-  if (!res.ok) throw new Error(`${res.status}`);
+  if (!res.ok) throw await openAICompatResponseError(res);
   el.innerHTML = '';
   el.setAttribute('data-streaming', '1');
   const reader = res.body.getReader(), dec = new TextDecoder();
@@ -1867,8 +1911,8 @@ function openChatSection(systemContext) {
   const section = document.getElementById('chat-section');
   section.style.display = 'block';
   section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  const provLabels = { builtin: t('Built-in Oracle','内置神谕'), claude: 'Claude', openai: 'GPT-4o', grok: 'Grok', deepseek: 'DeepSeek', qwen: '通义千问', zhipu: '智谱 GLM', minimax: 'MiniMax', gemini: 'Gemini', kimi: 'Kimi', doubao: '豆包', custom: t('Custom / Relay','自定义 / 中转站') };
-  const cm = (aiSettings.customModel || '').trim();
+  const provLabels = { builtin: t('Built-in Oracle','内置神谕'), codex: '本地 Codex', claude: 'Claude', openai: 'GPT-4o', grok: 'Grok', deepseek: 'DeepSeek', qwen: '通义千问', zhipu: '智谱 GLM', minimax: 'MiniMax', gemini: 'Gemini', kimi: 'Kimi', doubao: '豆包', custom: t('Custom / Relay','自定义 / 中转站') };
+  const cm = aiSettings.engine === 'codex' ? '' : (aiSettings.customModel || '').trim();
   document.getElementById('chat-model-label').textContent = cm || provLabels[aiSettings.engine] || '';
   chatHistory = [{ role: 'system', content: systemContext }];
 
@@ -1932,7 +1976,10 @@ async function sendChat() {
       chatHistory.push({ role: 'assistant', content: full || div.textContent });
     } catch (err) {
       const retryMsg = msg;
-      div.innerHTML = `<span style="color:var(--red)">${t('The Oracle is silent — check your API key.','神谕沉默——请检查API密钥。')}</span><br><button onclick="(()=>{this.closest('.msg').remove();document.getElementById('chat-input').value=${JSON.stringify(retryMsg)};sendChat()})()" style="margin-top:.5rem;padding:.3rem .9rem;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;font-family:Georgia,serif;font-size:.75rem">${t('↺ Retry','↺ 点击重试')}</button>`;
+      const errorMessage = aiSettings.engine === 'codex'
+        ? escapeHtml(err.message || t('Unknown error','未知错误'))
+        : t('The Oracle is silent — check your API key.','神谕沉默——请检查API密钥。');
+      div.innerHTML = `<span style="color:var(--red)">${errorMessage}</span><br><button onclick="(()=>{this.closest('.msg').remove();document.getElementById('chat-input').value=${JSON.stringify(retryMsg)};sendChat()})()" style="margin-top:.5rem;padding:.3rem .9rem;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;font-family:Georgia,serif;font-size:.75rem">${t('↺ Retry','↺ 点击重试')}</button>`;
     }
   }
   sendBtn.disabled = false;
@@ -2235,15 +2282,36 @@ function onPersonaChange() {
 function onEngineChange() {
   const v = document.getElementById('ai-engine-select').value;
   const isBuiltin = v === 'builtin';
-  const isCustom  = v === 'custom';
-  document.getElementById('api-key-section').style.display = isBuiltin ? 'none' : 'block';
-  document.getElementById('model-section').style.display  = (isBuiltin || isCustom) ? 'none' : 'block';
-  const urlSec = document.getElementById('api-url-section');
-  // 中转站/自定义接口地址只在「自定义」引擎下出现；其余引擎用各家官方地址。
-  if (urlSec) urlSec.style.display = isCustom ? 'block' : 'none';
-  const cmSec = document.getElementById('custom-model-section');
-  if (cmSec) cmSec.style.display = isBuiltin ? 'none' : 'block';
-  if (!isBuiltin && !isCustom) populateModelSelect(v);
+  const isCustom = v === 'custom';
+  const isCodex = v === 'codex';
+  document.getElementById('api-key-section').style.display = (isBuiltin || isCodex) ? 'none' : 'block';
+  document.getElementById('model-section').style.display = (isBuiltin || isCustom || isCodex) ? 'none' : 'block';
+  document.getElementById('api-url-section').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('custom-model-section').style.display = (isBuiltin || isCodex) ? 'none' : 'block';
+  document.getElementById('local-codex-section').style.display = isCodex ? 'block' : 'none';
+  if (!isBuiltin && !isCustom && !isCodex) populateModelSelect(v);
+}
+
+async function checkLocalCodexConnection() {
+  const status = document.getElementById('local-codex-status');
+  const url = LocalCodexUI.healthUrl(window.location);
+  if (!url) {
+    status.textContent = LocalCodexUI.errorText('local_page_required', lang);
+    return;
+  }
+  status.textContent = t('Checking local service…', '正在检测本地服务…');
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    const body = await response.json();
+    if (body.auth === 'required') {
+      status.textContent = LocalCodexUI.errorText('chatgpt_login_required', lang);
+      return;
+    }
+    if (!response.ok || body.status !== 'ok' || body.auth !== 'chatgpt') throw new Error('not_ready');
+    status.textContent = t(`Connected · ${body.model}`, `已连接 · ${body.model}`);
+  } catch {
+    status.textContent = LocalCodexUI.errorText('unavailable', lang);
+  }
 }
 
 function populateModelSelect(engine) {
@@ -2276,14 +2344,17 @@ function updateModelInfo(engine) {
 }
 
 function saveSettings() {
-  aiSettings.engine  = document.getElementById('ai-engine-select').value;
-  aiSettings.apiKey  = document.getElementById('api-key-input').value.trim();
-  aiSettings.model   = document.getElementById('model-select').value || '';
+  const engine = document.getElementById('ai-engine-select').value;
+  aiSettings.engine = engine;
   aiSettings.persona = document.getElementById('persona-select').value || 'healer';
-  const urlInp = document.getElementById('api-url-input');
-  aiSettings.apiUrl = urlInp ? normalizeApiUrl(urlInp.value) : '';
-  const cmInp = document.getElementById('custom-model-input');
-  aiSettings.customModel = cmInp ? cmInp.value.trim() : '';
+  if (engine !== 'codex') {
+    aiSettings.apiKey = document.getElementById('api-key-input').value.trim();
+    aiSettings.model = document.getElementById('model-select').value || '';
+    const urlInp = document.getElementById('api-url-input');
+    aiSettings.apiUrl = urlInp ? normalizeApiUrl(urlInp.value) : '';
+    const cmInp = document.getElementById('custom-model-input');
+    aiSettings.customModel = cmInp ? cmInp.value.trim() : '';
+  }
   localStorage.setItem('tarot-ai-settings', JSON.stringify(aiSettings));
   closeSettings();
   notify(t('Settings saved.','设置已保存。'));

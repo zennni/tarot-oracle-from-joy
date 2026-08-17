@@ -1101,6 +1101,7 @@ option{background:var(--bg2)}
     <div class="modal-label" id="modal-lbl-ai">AI Reading Engine</div>
     <select class="modal-select" id="ai-engine-select" onchange="onEngineChange()">
       <option value="builtin">内置神谕（离线·模板）</option>
+      <option value="codex">本地 Codex（ChatGPT 登录）</option>
       <option value="claude">Claude (Anthropic)</option>
       <option value="openai">GPT-4o (OpenAI)</option>
       <option value="grok">Grok (xAI)</option>
@@ -1133,6 +1134,15 @@ option{background:var(--bg2)}
         onblur="normalizeApiUrlInput(this)">
       <div id="api-url-autocomplete-note" style="display:none;font-size:.72rem;color:var(--gold);margin:.25rem 0 0 .1rem">✓ <span id="api-url-autocomplete-text"></span></div>
       <div class="modal-hint" id="modal-hint-url">直接粘贴域名即可，系统会自动补全为完整接口地址。<br>例：<code style="font-size:.75em;color:rgba(201,168,76,.8)">https://gcli.ggchan.dev</code> → <code style="font-size:.75em;color:rgba(201,168,76,.8)">https://gcli.ggchan.dev/v1/chat/completions</code></div>
+    </div>
+
+    <div id="local-codex-section" style="display:none;margin:.8rem 0">
+      <button type="button" class="modal-save-btn" id="local-codex-test" onclick="checkLocalCodexConnection()">
+        检测本地 Codex
+      </button>
+      <div class="modal-hint" id="local-codex-status" aria-live="polite">
+        连接检测不会调用模型或消耗额度。
+      </div>
     </div>
 
     <div id="api-key-section" style="display:none">
@@ -1266,6 +1276,7 @@ option{background:var(--bg2)}
 <script src="waite_cn.js"></script>
 <script src="cards.js"></script>
 <script src="xyj_lore.js"></script>
+<script src="local-codex-ui.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
